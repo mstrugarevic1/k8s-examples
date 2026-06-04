@@ -1,0 +1,35 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredresources
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredResources
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredresources
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not container.resources.requests.cpu
+          msg := sprintf("Kontejner <%v> mora imati definisan CPU request", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not container.resources.requests.memory
+          msg := sprintf("Kontejner <%v> mora imati definisan memory request", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.ephemeralContainers[_]
+        }

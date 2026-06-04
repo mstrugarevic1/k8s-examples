@@ -1,0 +1,12 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sForbiddenLoadBalancer
+metadata:
+  name: service-no-loadbalancer-in-dev-staging
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+    namespaces:
+      - dev
+      - staging
