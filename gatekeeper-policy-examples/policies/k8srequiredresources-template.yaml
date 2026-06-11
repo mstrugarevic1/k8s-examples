@@ -15,13 +15,13 @@ spec:
         violation[{"msg": msg}] {
           container := input_containers[_]
           not container.resources.requests.cpu
-          msg := sprintf("Kontejner <%v> mora imati definisan CPU request", [container.name])
+          msg := sprintf("Container <%v> must have a CPU request defined", [container.name])
         }
 
         violation[{"msg": msg}] {
           container := input_containers[_]
           not container.resources.requests.memory
-          msg := sprintf("Kontejner <%v> mora imati definisan memory request", [container.name])
+          msg := sprintf("Container <%v> must have a memory request defined", [container.name])
         }
 
         input_containers[c] {

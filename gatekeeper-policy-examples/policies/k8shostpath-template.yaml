@@ -15,5 +15,5 @@ spec:
         violation[{"msg": msg}] {
           volume := input.review.object.spec.volumes[_]
           volume.hostPath
-          msg := sprintf("hostPath volume <%v> nije dozvoljen", [volume.name])
+          msg := sprintf("hostPath volume <%v> is not allowed", [volume.name])
         }

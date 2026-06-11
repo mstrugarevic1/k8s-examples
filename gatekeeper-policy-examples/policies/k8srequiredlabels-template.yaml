@@ -25,5 +25,5 @@ spec:
           required := {label | label := input.parameters.labels[_]}
           missing := required - provided
           count(missing) > 0
-          msg := sprintf("Morate obezbediti sledeće labele: %v", [missing])
+          msg := sprintf("You must provide the following labels: %v", [missing])
         }

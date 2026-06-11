@@ -15,5 +15,5 @@ spec:
         violation[{"msg": msg}] {
           input.review.object.kind == "Service"
           input.review.object.spec.type == "LoadBalancer"
-          msg := "LoadBalancer Service nije dozvoljen u ovom namespace-u."
+          msg := "LoadBalancer Service is not allowed in this namespace."
         }

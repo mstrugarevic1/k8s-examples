@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: slo-demo
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: curl
+        image: curlimages/curl:8.7.1
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          # Deterministic POSIX shell counter for predictable traffic
+          # Aiming for 99.7% availability (3 failures per 1000 requests)
+          i=0
+          while true; do
+            i=$(( (i + 1) % 1000 ))
+            
+            if [ "$i" -lt 3 ]; then
+              # 0.3% Failures (HTTP 500)
+              curl -s -o /dev/null -m 5 http://slo-demo.slo-demo.svc.cluster.local/fail
+            elif [ "$i" -lt 53 ]; then
+              # 5% Slow requests (HTTP 200)
+              curl -s -o /dev/null -m 5 http://slo-demo.slo-demo.svc.cluster.local/slow
+            else
+              # ~94.7% Normal requests (HTTP 200)
+              curl -s -o /dev/null -m 5 http://slo-demo.slo-demo.svc.cluster.local/
+            fi
+            
+            sleep 0.1
+          done

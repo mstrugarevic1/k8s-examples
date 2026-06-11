@@ -24,7 +24,7 @@ spec:
           container := input_containers[_]
           satisfied := [good | repo := input.parameters.repos[_]; good := startswith(container.image, repo)]
           not any(satisfied)
-          msg := sprintf("Kontejner <%v> koristi nedozvoljen registry <%v>. Dozvoljeni su: %v", [container.name, container.image, input.parameters.repos])
+          msg := sprintf("Container <%v> uses an unapproved registry <%v>. Allowed registries are: %v", [container.name, container.image, input.parameters.repos])
         }
 
         input_containers[c] {

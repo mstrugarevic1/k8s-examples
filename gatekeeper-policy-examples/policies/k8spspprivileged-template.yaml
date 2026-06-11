@@ -15,7 +15,7 @@ spec:
         violation[{"msg": msg, "details": {}}] {
           c := input_containers[_]
           c.securityContext.privileged
-          msg := sprintf("Privilegovani kontejneri nisu dozvoljeni: %v", [c.name])
+          msg := sprintf("Privileged containers are not allowed: %v", [c.name])
         }
 
         input_containers[c] {

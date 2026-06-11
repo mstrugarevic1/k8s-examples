@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: slo-demo
+  namespace: slo-demo
+  labels:
+    # This label must match the label selected by your Prometheus installation.
+    # For kube-prometheus-stack, it is usually 'release: <helm-release-name>'.
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: slo-demo
+  namespaceSelector:
+    matchNames:
+      - slo-demo
+  endpoints:
+  - port: http
+    interval: 15s
+    path: /metrics

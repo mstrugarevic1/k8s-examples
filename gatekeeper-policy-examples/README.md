@@ -1,69 +1,69 @@
-# OPA Gatekeeper Primeri za Kubernetes
+# OPA Gatekeeper Examples for Kubernetes
 
-Ovaj repozitorijum sadrži praktične primere OPA Gatekeeper polisa za Kubernetes. Cilj je edukacija i demonstracija kako se koriste ConstraintTemplate i Constraint resursi za nametanje sigurnosnih i operativnih pravila.
+This repository contains practical examples of OPA Gatekeeper policies for Kubernetes. The goal is education and demonstration of how to use ConstraintTemplate and Constraint resources to enforce security and operational rules.
 
-## Zahtevi
+## Requirements
 
-- Kubernetes klaster
-- OPA Gatekeeper instaliran na klasteru
+- Kubernetes cluster
+- OPA Gatekeeper installed on the cluster
 
-### Instalacija Gatekeeper-a
+### Gatekeeper Installation
 
-Ako već nemate instaliran Gatekeeper, možete ga instalirati komandom:
+If you don't already have Gatekeeper installed, you can install it with the following command:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml
 ```
 
-## Struktura projekta
+## Project Structure
 
-- `policies/`: Sadrži ConstraintTemplate i Constraint definicije.
-- `examples/good/`: Primeri manifesta koji ispunjavaju polise.
-- `examples/bad/`: Primeri manifesta koji krše polise (služe za testiranje).
+- `policies/`: Contains ConstraintTemplate and Constraint definitions.
+- `examples/good/`: Example manifests that satisfy the policies.
+- `examples/bad/`: Example manifests that violate the policies (used for testing).
 
-## Polise u ovom repozitorijumu
+## Policies in this Repository
 
-1. **Namespace owner label**: Svaki Namespace mora imati `owner` labelu.
-2. **No privileged containers**: Podovi ne smeju koristiti privilegovane kontejnere.
-3. **Approved registries**: Podovi smeju koristiti slike samo iz dozvoljenih registry-ja (npr. `gcr.io`).
-4. **Resource requests**: Svi kontejneri moraju imati definisane CPU i memory request-ove.
-5. **No LoadBalancer in dev/staging**: LoadBalancer tip servisa je zabranjen u `dev` i `staging` namespace-ovima.
-6. **No hostPath volumes**: Podovi ne smeju koristiti `hostPath` volumene.
+1. **Namespace owner label**: Every Namespace must have an `owner` label.
+2. **No privileged containers**: Pods must not use privileged containers.
+3. **Approved registries**: Pods may only use images from allowed registries (e.g., `gcr.io`).
+4. **Resource requests**: All containers must have CPU and memory requests defined.
+5. **No LoadBalancer in dev/staging**: LoadBalancer type services are forbidden in `dev` and `staging` namespaces.
+6. **No hostPath volumes**: Pods must not use `hostPath` volumes.
 
-## Korišćenje
+## Usage
 
-### Primena polisa
+### Applying Policies
 
-Da biste primenili sve polise na vaš klaster, pokrenite:
+To apply all policies to your cluster, run:
 
 ```bash
 make apply
 ```
 
-### Testiranje polisa
+### Testing Policies
 
-Za testiranje ispravnih manifesta (treba da prođu):
+To test valid manifests (should pass):
 
 ```bash
 make test-good
 ```
 
-Za testiranje neispravnih manifesta (treba da budu odbijeni):
+To test invalid manifests (should be rejected):
 
 ```bash
 make test-bad
 ```
 
-### Čišćenje
+### Cleanup
 
-Da biste uklonili sve resurse kreirane ovim primerima:
+To remove all resources created by these examples:
 
 ```bash
 make clean
 ```
 
-## Objašnjenje polisa
+## Policy Explanation
 
-Svaka polisa se sastoji iz dva dela:
-1. **ConstraintTemplate**: Definiše Rego logiku i parametre polise.
-2. **Constraint**: Primena polise na konkretne resurse (npr. samo na Podove ili određene namespace-ove).
+Every policy consists of two parts:
+1. **ConstraintTemplate**: Defines the Rego logic and policy parameters.
+2. **Constraint**: Application of the policy to specific resources (e.g., only to Pods or specific namespaces).
