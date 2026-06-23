@@ -1,29 +1,91 @@
-# Kubernetes SLO Demo
+# Kubernetes SLI/SLO Demo
 
-This repository contains a practical demonstration of Service Level Objectives (SLOs) and Service Level Agreements (SLAs) using a Python Flask application on Kubernetes, monitored by Prometheus and Grafana.
+This repository contains a practical demonstration of Service Level Indicators (SLIs), Service Level Objectives (SLOs), and Service Level Agreements (SLAs) using a Python Flask application on Kubernetes, monitored by Prometheus and Grafana.
 
 ## Purpose
 
 The goal of this demo is to show how to measure and visualize service reliability. It simulates a realistic service with occasional failures and latency, allowing you to see how these impact your SLIs, SLOs, and error budgets.
 
-## Why SLO and SLA measurements matter
+## Why SLI, SLO and SLA measurements matter
 
 Measuring service levels is fundamental to Site Reliability Engineering (SRE). It allows teams to:
-* **Quantify reliability:** Move from "the service feels slow" to "95th percentile latency is 1.2s".
+* **Quantify reliability:** Move from "the service feels unreliable" to "the availability SLI is 99.7%".
 * **Manage error budgets:** Use data to decide when to focus on features vs. reliability.
 * **Define clear expectations:** Align engineering, product, and customers on what "reliable" means.
 * **Alert on what matters:** Reduce alert fatigue by alerting on SLO consumption rather than individual component failures.
 
 ## Definitions
 
-* **SLI (Service Level Indicator):** The actual measured behavior. In this demo, it is the percentage of successful HTTP requests (2xx status codes).
-* **SLO (Service Level Objective):** Internal target (99.9%).
-* **SLA (Service Level Agreement):** Contractual commitment (99.5%).
+* **SLI (Service Level Indicator):** The actual measured behavior. In this demo, the availability SLI is successful HTTP requests divided by all service requests.
+* **SLO (Service Level Objective):** Internal target for the SLI (99.9% availability).
+* **SLA (Service Level Agreement):** Contractual commitment for the SLI (99.5% availability).
 * **Error Budget:** The allowable unreliability (0.1% for our 99.9% SLO).
+
+## Demo SLI
+
+Prometheus calculates the availability SLI from the application request counter:
+
+```promql
+100 *
+sum(rate(slo_demo_http_requests_total{route!~"/metrics|/healthz", status=~"2.."}[5m]))
+/
+sum(rate(slo_demo_http_requests_total{route!~"/metrics|/healthz"}[5m]))
+```
+
+The demo load generator intentionally produces about **99.7% availability**. That keeps the service above the 99.5% SLA but below the 99.9% SLO, so the dashboard shows an SLI that is good enough contractually while still burning the internal SLO error budget.
+
+## Practical examples
+
+Use SLIs, SLOs and SLAs on user-facing service paths, not on monitoring or health-check endpoints. In this demo, that means the Flask application endpoints `/`, `/slow` and `/fail` count as service traffic, while `/metrics` and `/healthz` are excluded.
+
+### Example 1: Availability
+
+* **Need:** Users care whether the service answers successfully.
+* **Application:** The `slo-demo` Flask service.
+* **Traffic counted:** All user-facing HTTP requests.
+* **SLI calculation:** `successful requests / total requests`.
+* **SLO target:** 99.9% availability.
+* **SLA target:** 99.5% availability.
+
+For 100,000 requests, 99.7% availability means:
+
+```text
+99,700 successful requests / 100,000 total requests = 99.7% availability SLI
+```
+
+That misses the 99.9% SLO, so engineering is burning internal error budget. It still meets the 99.5% SLA, so it has not breached the external commitment.
+
+### Example 2: Latency
+
+* **Need:** A service can be "up" but still too slow for users.
+* **Application:** The same `slo-demo` Flask service, especially the `/slow` endpoint.
+* **Traffic counted:** User-facing HTTP request durations.
+* **SLI calculation:** 95th percentile request latency.
+* **Example SLO:** 95% of requests should finish under 500 ms.
+* **Example SLA:** 95% of requests should finish under 1 second.
+
+The demo dashboard shows P95 and P99 latency from `slo_demo_http_request_duration_seconds_bucket`. This demo does not enforce a latency SLO in the error-budget panels; it displays latency beside availability so you can see when successful requests are still slow.
+
+### Example 3: Error budget
+
+* **Need:** Teams need a concrete answer to "can we keep shipping or should we fix reliability first?"
+* **Application:** The `slo-demo` Flask service.
+* **Traffic counted:** Failed user-facing requests.
+* **Calculation:** `actual error rate / allowed error rate`.
+
+For a 99.9% SLO, the allowed error rate is 0.1%. If the app is actually failing 0.3% of requests:
+
+```text
+0.3% actual error rate / 0.1% allowed error rate = 3x burn rate
+```
+
+A 3x burn rate means the service is consuming its error budget three times faster than planned.
 
 ## Table of Contents
 
 * [Prerequisites](#prerequisites)
+* [Demo SLI](#demo-sli)
+* [Practical examples](#practical-examples)
 * [Step-by-Step Workflow](#step-by-step-workflow)
     * [1. Create or select the Kind cluster](#1-create-or-select-the-kind-cluster)
     * [2. Build the local image](#2-build-the-local-image)
@@ -142,18 +204,19 @@ echo
 
 ## Interpreting the Dashboard
 
-The dashboard consists of six key panels:
+The dashboard consists of seven key panels:
 
-1. **Availability vs SLO and SLA:** A time-series view of actual availability compared to our 99.9% SLO and 99.5% SLA lines.
-2. **SLO Burn Rate:** A stat panel showing how quickly the service consumes its 99.9% SLO error budget. A burn rate of 1.0 means the budget is being consumed exactly at the rate that will exhaust it by the end of the evaluation period. Values above 1.0 are not sustainable.
-3. **Error Budget Remaining:** A gauge showing how much of your error budget (based on the 99.9% SLO) remains for the selected time range.
-4. **Request Rate:** Total traffic volume, grouped by HTTP status code.
-5. **HTTP 5xx Error Rate:** A focused view of server-side errors.
-6. **P95 Request Latency:** The 95th percentile latency, highlighting the "slow" requests.
+1. **Availability SLI vs SLO and SLA:** A time-series view of the measured availability SLI compared to our 99.9% SLO and 99.5% SLA lines.
+2. **Availability SLI:** A stat panel showing the current measured SLI for the selected time range.
+3. **SLO Burn Rate:** A stat panel showing how quickly the service consumes its 99.9% SLO error budget. A burn rate of 1.0 means the budget is being consumed exactly at the rate that will exhaust it by the end of the evaluation period. Values above 1.0 are not sustainable.
+4. **Error Budget Remaining:** A gauge showing how much of your error budget (based on the 99.9% SLO) remains for the selected time range.
+5. **Request Rate:** Total traffic volume, grouped by HTTP status code.
+6. **HTTP 5xx Error Rate:** A focused view of server-side errors.
+7. **P95 and P99 Request Latency:** Tail latency, highlighting the slow requests.
 
 ## Dashboard Preview
 
-The dashboard below shows the measured availability, SLO and SLA thresholds, error-budget consumption, traffic, errors and latency produced by the demo workload.
+The dashboard below shows the measured availability SLI, SLO and SLA thresholds, error-budget consumption, traffic, errors and latency produced by the demo workload.
 
 ![SLO Demo Grafana Dashboard](images/slo-demo-grafana-dashboard.png)
 

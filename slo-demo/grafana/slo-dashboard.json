@@ -25,7 +25,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Measured availability vs SLO and SLA targets.",
+      "description": "Availability SLI: successful 2xx requests divided by all service requests, compared to SLO and SLA targets.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -136,8 +136,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "100 * sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"2..\"}[$__rate_interval])) / sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"[25]..\"}[$__rate_interval]))",
-          "legendFormat": "Actual Availability",
+          "expr": "100 * sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"2..\"}[$__rate_interval])) / sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\"}[$__rate_interval]))",
+          "legendFormat": "Availability SLI",
           "range": true,
           "refId": "A"
         },
@@ -164,8 +164,81 @@
           "refId": "C"
         }
       ],
-      "title": "Availability vs SLO and SLA",
+      "title": "Availability SLI vs SLO and SLA",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Current availability SLI for the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 3,
+          "mappings": [],
+          "max": 100,
+          "min": 99,
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "100 * sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"2..\"}[$__range])) / sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\"}[$__range]))",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Availability SLI",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -208,7 +281,7 @@
       "gridPos": {
         "h": 4,
         "w": 6,
-        "x": 12,
+        "x": 18,
         "y": 1
       },
       "id": 3,
@@ -233,7 +306,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "(sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"5..\"}[$__rate_interval])) / sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"[25]..\"}[$__rate_interval]))) / 0.001",
+          "expr": "(sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status!~\"2..\"}[$__rate_interval])) / sum(rate(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\"}[$__rate_interval]))) / 0.001",
           "range": true,
           "refId": "A"
         }
@@ -278,9 +351,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 1
+        "w": 12,
+        "x": 12,
+        "y": 5
       },
       "id": 4,
       "options": {
@@ -302,7 +375,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "100 * clamp_max(clamp_min(1 - (sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"5..\"}[$__range])) / (0.001 * sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status=~\"[25]..\"}[$__range])))), 0), 1)",
+          "expr": "100 * clamp_max(clamp_min(1 - (sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\", status!~\"2..\"}[$__range])) / (0.001 * sum(increase(slo_demo_http_requests_total{namespace=\"$namespace\", route!~\"/metrics|/healthz\"}[$__range])))), 0), 1)",
           "range": true,
           "refId": "A"
         }
@@ -640,6 +713,7 @@
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
+    "sli",
     "slo",
     "demo"
   ],
@@ -695,7 +769,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "SLO Demo - Service Reliability",
+  "title": "SLI/SLO Demo - Service Reliability",
   "uid": "slo_demo_reliability",
   "version": 1,
   "weekStart": ""
