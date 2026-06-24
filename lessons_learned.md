@@ -1,0 +1,1 @@
+- The writable workspace may be a subdirectory (`slo-demo`) while the git root is the parent repo, so git index writes can require escalation.

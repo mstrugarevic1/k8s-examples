@@ -8,6 +8,9 @@ This repository collects small, hands-on Kubernetes examples for learning and va
 
 It is not a production platform template. Treat the examples as learning material and starting points for your own environment.
 
+> [!NOTE]
+> This repository is provided as-is for learning and experimentation, without warranty of any kind. The examples are not fully tested for production use. You are responsible for reviewing, adapting, and validating them before use, and the author is not liable for misuse, damage, data loss, security issues, or other consequences resulting from this material.
+
 ## Examples
 
 * **[SLO Demo](./slo-demo/README.md)**: A practical demonstration of Service Level Objectives (SLOs) using Prometheus and Grafana.
