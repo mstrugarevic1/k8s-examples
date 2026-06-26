@@ -17,17 +17,6 @@ It is not a production platform template. Treat the examples as learning materia
 * **[Gatekeeper Policy Examples](./gatekeeper-policy-examples/README.md)**: A set of OPA Gatekeeper policies for enforcing cluster-wide constraints.
 * **[Kubernetes Namespace Onboarding](./k8s-namespace-onboarding/README.md)**: A small generator that turns one team YAML into namespace-scoped Kubernetes onboarding manifests.
 
-## Getting Started
-
-Each directory contains its own README with prerequisites and usage instructions.
-
-Typical usage:
-
-```bash
-cd slo-demo
-# Follow the README in that example directory.
-```
-
 ## Technologies Demonstrated
 
 - Kubernetes manifests and workload configuration.
