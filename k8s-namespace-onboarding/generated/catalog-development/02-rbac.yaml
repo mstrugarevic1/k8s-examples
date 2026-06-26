@@ -1,0 +1,106 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: read-only
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+  namespace: catalog-development
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - pods/log
+  - services
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+  namespace: catalog-development
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - pods/log
+  - services
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-only
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+  namespace: catalog-development
+subjects:
+- kind: Group
+  name: catalog-readers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: read-only
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+  namespace: catalog-development
+subjects:
+- kind: Group
+  name: catalog-developers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io

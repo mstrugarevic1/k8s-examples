@@ -1,0 +1,24 @@
+name: Validate Namespace Onboarding
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: k8s-namespace-onboarding
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: make install
+      - run: make test
+      - run: make generate TEAM=payments-staging
+      - run: make generate TEAM=catalog-development
+      - run: git diff --exit-code -- generated

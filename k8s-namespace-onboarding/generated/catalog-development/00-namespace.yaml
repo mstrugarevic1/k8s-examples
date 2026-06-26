@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: catalog-development
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

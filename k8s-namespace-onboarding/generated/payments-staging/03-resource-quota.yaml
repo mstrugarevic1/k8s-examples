@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: namespace-quota
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: payments
+    platform.example.com/environment: staging
+  namespace: payments-staging
+spec:
+  hard:
+    requests.cpu: '4'
+    requests.memory: 8Gi
+    limits.cpu: '4'
+    limits.memory: 8Gi
+    pods: '20'
