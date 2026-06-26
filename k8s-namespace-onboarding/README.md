@@ -1,8 +1,10 @@
 # Kubernetes Namespace Onboarding
 
-Reference implementation for Git-based onboarding of application teams into a shared Kubernetes cluster.
+Small example for creating a Kubernetes namespace from one YAML file.
 
-The project keeps onboarding small: a team submits one YAML file, the generator validates it, and deterministic Kubernetes manifests are committed for review and GitOps/manual deployment. It is a portfolio/reference project, not a complete production platform.
+A team fills in a config file, the script checks it, and the script writes the Kubernetes YAML for that namespace. The generated files can be reviewed in Git and then applied manually or by a GitOps tool.
+
+This is an example project, not a complete production platform.
 
 ```text
 Team YAML
@@ -107,19 +109,19 @@ make validate TEAM=payments-staging
 
 ## Generated Security Controls
 
-- Namespace-scoped `Role` and `RoleBinding` only.
-- No `ClusterRole`, `ClusterRoleBinding`, or `cluster-admin`.
-- No wildcard RBAC permissions.
-- No Secrets access.
-- `ServiceAccount` token automount disabled by default.
-- Default-deny ingress and egress `NetworkPolicy`.
-- DNS egress allowed only when `network.allowDns` is true.
-- Optional same-namespace traffic policy.
-- `ResourceQuota` and `LimitRange` enforce resource boundaries.
+- Roles and RoleBindings are created only inside the namespace.
+- No cluster-wide admin permissions are generated.
+- RBAC does not use `*` permissions.
+- Roles do not allow access to Kubernetes Secrets.
+- The generated ServiceAccount does not mount a token by default.
+- Network traffic is denied by default.
+- DNS access is added only when `network.allowDns` is true.
+- Same-namespace traffic is optional.
+- Quotas and default container limits are generated.
 
 ## Limitations
 
-- This project does not install Kubernetes, Argo CD, Flux, monitoring, service mesh, or secret-management infrastructure.
-- It does not generate application workload resources or PodDisruptionBudgets.
-- Client-side validation is a smoke check, not a substitute for server-side validation in a real test cluster.
-- The RBAC model is intentionally small and may need adjustment for your platform conventions.
+- It does not install Kubernetes or any cluster add-ons.
+- It does not create application Deployments, Services, or PodDisruptionBudgets.
+- `make validate` is only a basic local check.
+- The RBAC rules are simple and may need changes for a real company setup.
