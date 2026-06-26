@@ -19,13 +19,36 @@ def valid_config() -> dict[str, Any]:
         "team": "payments",
         "environment": "staging",
         "namespace": {"name": "payments-staging"},
+        "owner": "payments-team",
+        "costCenter": "finops-042",
         "resources": {
             "requests": {"cpu": "100m", "memory": "128Mi"},
             "limits": {"cpu": "500m", "memory": "512Mi"},
         },
-        "quota": {"cpu": "4", "memory": "8Gi", "pods": 20},
-        "network": {"allowDns": True, "allowIngressFromSameNamespace": True},
-        "rbac": {"readOnlyGroup": "payments-readers", "developerGroup": "payments-developers"},
+        "quota": {
+            "cpu": "4",
+            "memory": "8Gi",
+            "pods": 20,
+            "storage": "20Gi",
+            "persistentVolumeClaims": 5,
+            "services": 10,
+            "configmaps": 20,
+            "secrets": 20,
+        },
+        "network": {
+            "allowDns": True,
+            "allowIngressFromSameNamespace": True,
+            "allowIngressFromNamespaces": ["ingress-nginx"],
+            "allowEgressToNamespaces": ["observability"],
+            "allowExternalEgress": False,
+        },
+        "rbac": {
+            "readOnlyGroup": "payments-readers",
+            "developerGroup": "payments-developers",
+            "allowExec": False,
+            "allowPortForward": False,
+        },
+        "serviceAccount": {"create": True, "name": "deployer"},
     }
 
 
@@ -72,6 +95,7 @@ def test_generated_namespace_name() -> None:
 
     assert namespace["kind"] == "Namespace"
     assert namespace["metadata"]["name"] == "payments-staging"
+    assert namespace["metadata"]["labels"]["pod-security.kubernetes.io/enforce"] == "restricted"
 
 
 def test_no_cluster_roles_or_bindings() -> None:
@@ -100,6 +124,34 @@ def test_default_deny_network_policy_generation() -> None:
 
     assert default_deny["spec"]["podSelector"] == {}
     assert default_deny["spec"]["policyTypes"] == ["Ingress", "Egress"]
+
+
+def test_namespace_to_namespace_network_policies() -> None:
+    policies = list(yaml.safe_load_all(files_for(validate_config(valid_config()))["05-network-policies.yaml"]))
+    names = {policy["metadata"]["name"] for policy in policies}
+
+    assert "allow-ingress-from-namespaces" in names
+    assert "allow-egress-to-namespaces" in names
+    assert "allow-external-egress" not in names
+
+
+def test_quota_includes_storage_and_object_counts() -> None:
+    quota = yaml.safe_load(files_for(validate_config(valid_config()))["03-resource-quota.yaml"])
+    hard = quota["spec"]["hard"]
+
+    assert hard["requests.storage"] == "20Gi"
+    assert hard["persistentvolumeclaims"] == "5"
+    assert hard["services"] == "10"
+    assert hard["configmaps"] == "20"
+    assert hard["secrets"] == "20"
+
+
+def test_service_account_is_bound_to_developer_role() -> None:
+    docs = list(yaml.safe_load_all(files_for(validate_config(valid_config()))["02-rbac.yaml"]))
+    binding = next(doc for doc in docs if doc["metadata"]["name"] == "deployer-service-account")
+
+    assert binding["subjects"] == [{"kind": "ServiceAccount", "name": "deployer", "namespace": "payments-staging"}]
+    assert binding["roleRef"]["name"] == "developer"
 
 
 def test_deterministic_output() -> None:

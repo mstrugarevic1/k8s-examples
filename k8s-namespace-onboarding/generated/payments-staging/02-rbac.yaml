@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 rules:
 - apiGroups:
@@ -38,6 +40,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 rules:
 - apiGroups:
@@ -77,6 +81,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 subjects:
 - kind: Group
@@ -95,11 +101,33 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 subjects:
 - kind: Group
   name: payments-developers
   apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer-service-account
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: payments
+    platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
+  namespace: payments-staging
+subjects:
+- kind: ServiceAccount
+  name: deployer
+  namespace: payments-staging
 roleRef:
   kind: Role
   name: developer

@@ -4,6 +4,9 @@ environment: development
 namespace:
   name: catalog-development
 
+owner: catalog-team
+costCenter: engineering
+
 resources:
   requests:
     cpu: "50m"
@@ -16,11 +19,25 @@ quota:
   cpu: "2"
   memory: "4Gi"
   pods: 10
+  storage: "10Gi"
+  persistentVolumeClaims: 3
+  services: 5
+  configmaps: 10
+  secrets: 10
 
 network:
   allowDns: true
   allowIngressFromSameNamespace: false
+  allowIngressFromNamespaces: []
+  allowEgressToNamespaces: []
+  allowExternalEgress: false
 
 rbac:
   readOnlyGroup: catalog-readers
   developerGroup: catalog-developers
+  allowExec: false
+  allowPortForward: false
+
+serviceAccount:
+  create: true
+  name: deployer

@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted

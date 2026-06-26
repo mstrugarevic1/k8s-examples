@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 spec:
   podSelector: {}
@@ -22,6 +24,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 spec:
   podSelector: {}
@@ -49,6 +53,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 spec:
   podSelector: {}
@@ -61,3 +67,45 @@ spec:
   egress:
   - to:
     - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-namespaces
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: payments
+    platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
+  namespace: payments-staging
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-namespaces
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: payments
+    platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
+  namespace: payments-staging
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability

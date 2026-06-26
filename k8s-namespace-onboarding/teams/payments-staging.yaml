@@ -4,6 +4,9 @@ environment: staging
 namespace:
   name: payments-staging
 
+owner: payments-team
+costCenter: finops-042
+
 resources:
   requests:
     cpu: "100m"
@@ -16,11 +19,27 @@ quota:
   cpu: "4"
   memory: "8Gi"
   pods: 20
+  storage: "20Gi"
+  persistentVolumeClaims: 5
+  services: 10
+  configmaps: 20
+  secrets: 20
 
 network:
   allowDns: true
   allowIngressFromSameNamespace: true
+  allowIngressFromNamespaces:
+    - ingress-nginx
+  allowEgressToNamespaces:
+    - observability
+  allowExternalEgress: false
 
 rbac:
   readOnlyGroup: payments-readers
   developerGroup: payments-developers
+  allowExec: false
+  allowPortForward: false
+
+serviceAccount:
+  create: true
+  name: deployer

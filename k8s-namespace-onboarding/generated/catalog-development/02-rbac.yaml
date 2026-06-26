@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
   namespace: catalog-development
 rules:
 - apiGroups:
@@ -38,6 +40,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
   namespace: catalog-development
 rules:
 - apiGroups:
@@ -77,6 +81,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
   namespace: catalog-development
 subjects:
 - kind: Group
@@ -95,11 +101,33 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
   namespace: catalog-development
 subjects:
 - kind: Group
   name: catalog-developers
   apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer-service-account
+  labels:
+    app.kubernetes.io/managed-by: k8s-namespace-onboarding
+    platform.example.com/team: catalog
+    platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
+  namespace: catalog-development
+subjects:
+- kind: ServiceAccount
+  name: deployer
+  namespace: catalog-development
 roleRef:
   kind: Role
   name: developer

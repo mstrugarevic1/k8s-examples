@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: payments
     platform.example.com/environment: staging
+    platform.example.com/owner: payments-team
+    platform.example.com/cost-center: finops-042
   namespace: payments-staging
 spec:
   hard:
@@ -15,3 +17,8 @@ spec:
     limits.cpu: '4'
     limits.memory: 8Gi
     pods: '20'
+    requests.storage: 20Gi
+    persistentvolumeclaims: '5'
+    services: '10'
+    configmaps: '20'
+    secrets: '20'

@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/managed-by: k8s-namespace-onboarding
     platform.example.com/team: catalog
     platform.example.com/environment: development
+    platform.example.com/owner: catalog-team
+    platform.example.com/cost-center: engineering
   namespace: catalog-development
 spec:
   hard:
@@ -15,3 +17,8 @@ spec:
     limits.cpu: '2'
     limits.memory: 4Gi
     pods: '10'
+    requests.storage: 10Gi
+    persistentvolumeclaims: '3'
+    services: '5'
+    configmaps: '10'
+    secrets: '10'
