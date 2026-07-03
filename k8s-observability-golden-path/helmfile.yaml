@@ -1,60 +1,7 @@
-repositories:
-  - name: prometheus-community
-    url: https://prometheus-community.github.io/helm-charts
-  - name: grafana
-    url: https://grafana.github.io/helm-charts
-  - name: fluent
-    url: https://fluent.github.io/helm-charts
-
-helmDefaults:
-  atomic: true
-  wait: true
-  timeout: 600
-
 environments:
-  local:
-    values:
-      - environments/local/prometheus.yaml
-      - environments/local/loki.yaml
-      - environments/local/fluent-bit.yaml
-  production:
-    values:
-      - environments/production/prometheus.yaml
-      - environments/production/loki.yaml
-      - environments/production/fluent-bit.yaml
+  local: {}
+  production: {}
 
-releases:
-  - name: kube-prometheus-stack
-    namespace: observability
-    createNamespace: true
-    chart: prometheus-community/kube-prometheus-stack
-    version: 61.9.0
-    values:
-      - environments/{{ .Environment.Name }}/prometheus.yaml
-
-  - name: loki
-    namespace: observability
-    createNamespace: true
-    chart: grafana/loki
-    version: 6.12.0
-    values:
-      - environments/{{ .Environment.Name }}/loki.yaml
-      {{- if eq .Environment.Name "production" }}
-      - loki:
-          storage:
-            bucketNames:
-              chunks: {{ env "LOKI_S3_BUCKET" | quote }}
-              ruler: {{ env "LOKI_S3_BUCKET" | quote }}
-              admin: {{ env "LOKI_S3_BUCKET" | quote }}
-            s3:
-              region: {{ env "LOKI_S3_REGION" | quote }}
-              endpoint: {{ env "LOKI_S3_ENDPOINT" | quote }}
-      {{- end }}
-
-  - name: fluent-bit
-    namespace: observability
-    createNamespace: true
-    chart: fluent/fluent-bit
-    version: 0.47.10
-    values:
-      - environments/{{ .Environment.Name }}/fluent-bit.yaml
+---
+helmfiles:
+  - path: helmfile.releases.yaml.gotmpl

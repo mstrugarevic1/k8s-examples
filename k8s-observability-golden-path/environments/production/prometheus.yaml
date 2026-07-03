@@ -4,13 +4,16 @@ defaultRules:
   create: true
 grafana:
   defaultDashboardsEnabled: false
+  defaultDatasourceUid: prometheus
   replicas: 2
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
-      folder: Golden Path
+      folder: /tmp/dashboards
       searchNamespace: observability
+      provider:
+        folder: Golden Path
     datasources:
       enabled: true
   additionalDataSources:

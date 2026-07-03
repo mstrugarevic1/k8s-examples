@@ -46,6 +46,7 @@ grafana:
 test:
 	@set -euo pipefail; \
 	command -v curl >/dev/null || { echo "missing curl"; exit 1; }; \
+	command -v python3 >/dev/null || { echo "missing python3"; exit 1; }; \
 	kubectl apply -f tests/fixtures/; \
 	trap 'kubectl delete -f tests/fixtures/ --ignore-not-found >/dev/null' EXIT; \
 	sleep 45; \
@@ -54,9 +55,11 @@ test:
 	kubectl -n $(NAMESPACE) port-forward svc/loki-gateway 3101:80 >/tmp/golden-path-test-loki.log 2>&1 & loki_pf=$$!; \
 	trap 'kill $$prom_pf $$loki_pf 2>/dev/null || true; kubectl delete -f tests/fixtures/ --ignore-not-found >/dev/null' EXIT; \
 	sleep 3; \
-	curl -fsS -G http://127.0.0.1:9091/api/v1/query --data-urlencode 'query=kube_pod_status_phase{namespace="observability-fixtures",phase="Pending"}' >/dev/null; \
-	curl -fsS -G http://127.0.0.1:9091/api/v1/query --data-urlencode 'query=kube_pod_container_status_restarts_total{namespace="observability-fixtures"}' >/dev/null; \
-	curl -fsS -G http://127.0.0.1:3101/loki/api/v1/query --data-urlencode 'query={namespace="observability-fixtures"}' >/dev/null
+	curl -fsS -G http://127.0.0.1:9091/api/v1/query --data-urlencode 'query=kube_pod_status_phase{namespace="observability-fixtures",pod="pending-too-large",phase="Pending"}' > /tmp/golden-path-test-pending.json; \
+	curl -fsS -G http://127.0.0.1:9091/api/v1/query --data-urlencode 'query=kube_pod_container_status_restarts_total{namespace="observability-fixtures",pod=~"crashloop.*"}' > /tmp/golden-path-test-restarts.json; \
+	curl -fsS -G http://127.0.0.1:9091/api/v1/query --data-urlencode 'query=kube_pod_container_status_last_terminated_reason{namespace="observability-fixtures",pod=~"excessive-memory.*",reason="OOMKilled"}' > /tmp/golden-path-test-oom.json; \
+	curl -fsS -G http://127.0.0.1:3101/loki/api/v1/query --data-urlencode 'query={namespace="observability-fixtures"}' > /tmp/golden-path-test-logs.json; \
+	python3 -c 'import json; value=lambda p: sum(float(r["value"][1]) for r in json.load(open(p))["data"]["result"]); assert value("/tmp/golden-path-test-pending.json") > 0, "Pending fixture metric missing"; assert value("/tmp/golden-path-test-restarts.json") > 0, "CrashLoop fixture metric missing"; assert value("/tmp/golden-path-test-oom.json") > 0, "OOMKilled fixture metric missing"; assert json.load(open("/tmp/golden-path-test-logs.json"))["status"] == "success", "Loki fixture query failed"'
 
 uninstall:
 	@set -euo pipefail; \

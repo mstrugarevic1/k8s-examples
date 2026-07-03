@@ -20,7 +20,7 @@ The single architecture diagram is maintained in [docs/architecture.md](docs/arc
 - `kubectl`
 - `helm`
 - `helmfile`
-- Optional: `promtool` for deeper rule validation
+- Optional: `promtool` and `ruby` for deeper rule validation
 
 ## Local Quick Start
 
@@ -64,11 +64,11 @@ Production values also enable persistent Prometheus storage, multiple useful rep
 
 Only these dashboards are provisioned:
 
-- Cluster Health
-- Workload Reliability
-- Capacity
-- Logs
-- Stack Health
+- [Cluster Health](docs/images/cluster-health.png)
+- [Workload Reliability](docs/images/workload-reliability.png)
+- [Capacity](docs/images/capacity.png)
+- [Logs](docs/images/logs.png)
+- [Stack Health](docs/images/stack-health.png)
 
 Variables: `cluster`, `namespace`, `workload`, `pod`, `container`.
 
@@ -105,4 +105,3 @@ make uninstall
 - No tracing, Tempo, OpenTelemetry, service mesh metrics, or business metrics.
 - The local profile is intentionally small and uses short retention.
 - Production S3 credentials are not managed here.
-

@@ -73,15 +73,7 @@ PY
 
 if command -v promtool >/dev/null; then
   say "checking Prometheus rule syntax with promtool"
-  python3 - <<'PY' >/tmp/golden-path-rules.yaml
-from pathlib import Path
-print("groups:")
-for p in ("rules/alerts.yaml", "rules/recording-rules.yaml"):
-    text = Path(p).read_text()
-    spec = text.split("spec:\n", 1)[1]
-    for line in spec.splitlines()[1:]:
-        print(line[2:] if line.startswith("  ") else line)
-PY
+  ruby -e 'require "yaml"; puts({"groups" => ARGV.flat_map { |f| YAML.load_file(f).fetch("spec").fetch("groups") }}.to_yaml)' rules/alerts.yaml rules/recording-rules.yaml >/tmp/golden-path-rules.yaml
   promtool check rules /tmp/golden-path-rules.yaml
 else
   echo "promtool not found; skipped Prometheus expression syntax check"
