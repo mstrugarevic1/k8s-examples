@@ -1,0 +1,24 @@
+{
+  "uid": "golden-path-cluster-health",
+  "title": "Cluster Health",
+  "tags": ["golden-path"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {"list": [
+    {"name": "cluster", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(up, cluster)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "namespace", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_namespace_status_phase, namespace)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "workload", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(namespace_workload_pod:kube_pod_owner:relabel{namespace=~\"$namespace\"}, workload)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "pod", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "container", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_pod_container_info{namespace=~\"$namespace\",pod=~\"$pod\"}, container)", "includeAll": true, "current": {"text": "All", "value": "$__all"}}
+  ]},
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Are all nodes Ready?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0}, "targets": [{"expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"}) / count(kube_node_status_condition{condition=\"Ready\",status=\"true\"})"}]},
+    {"id": 2, "type": "timeseries", "title": "How much allocatable CPU is used?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 9, "x": 6, "y": 0}, "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\",image!=\"\"}[5m])) / sum(kube_node_status_allocatable{resource=\"cpu\"})"}]},
+    {"id": 3, "type": "timeseries", "title": "How much allocatable memory is used?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 9, "x": 15, "y": 0}, "targets": [{"expr": "sum(container_memory_working_set_bytes{container!=\"\",image!=\"\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})"}]},
+    {"id": 4, "type": "stat", "title": "How many Pods are Pending or Failed?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 6, "x": 0, "y": 6}, "targets": [{"expr": "sum(kube_pod_status_phase{phase=~\"Pending|Failed\",namespace=~\"$namespace\"})"}]},
+    {"id": 5, "type": "timeseries", "title": "Which Pods are restarting?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 9, "x": 6, "y": 6}, "targets": [{"expr": "golden_path:pod_restart_rate{namespace=~\"$namespace\",pod=~\"$pod\"}"}]},
+    {"id": 6, "type": "table", "title": "Which namespaces look unhealthy?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 9, "x": 15, "y": 6}, "targets": [{"expr": "sum by (namespace) (kube_pod_status_phase{phase=~\"Pending|Failed\",namespace=~\"$namespace\"})"}]}
+  ]
+}
+

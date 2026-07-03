@@ -1,0 +1,4 @@
+.helmfile/
+*.log
+tmp/
+

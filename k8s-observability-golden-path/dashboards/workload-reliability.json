@@ -1,0 +1,26 @@
+{
+  "uid": "golden-path-workload-reliability",
+  "title": "Workload Reliability",
+  "tags": ["golden-path"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {"list": [
+    {"name": "cluster", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(up, cluster)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "namespace", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_namespace_status_phase, namespace)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "workload", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(namespace_workload_pod:kube_pod_owner:relabel{namespace=~\"$namespace\"}, workload)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "pod", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)", "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "container", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_pod_container_info{namespace=~\"$namespace\",pod=~\"$pod\"}, container)", "includeAll": true, "current": {"text": "All", "value": "$__all"}}
+  ]},
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Are desired replicas available?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0}, "targets": [{"expr": "kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\"$workload\"}"}, {"expr": "kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\"$workload\"}"}]},
+    {"id": 2, "type": "table", "title": "Which Deployments or StatefulSets are unavailable?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0}, "targets": [{"expr": "(kube_deployment_spec_replicas - kube_deployment_status_replicas_available) or (kube_statefulset_replicas - kube_statefulset_status_replicas_ready)"}]},
+    {"id": 3, "type": "timeseries", "title": "What is workload readiness?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0}, "targets": [{"expr": "golden_path:workload_readiness_ratio{namespace=~\"$namespace\",workload=~\"$workload\"}"}]},
+    {"id": 4, "type": "stat", "title": "Which Pods are CrashLooping?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 6, "x": 0, "y": 6}, "targets": [{"expr": "sum(kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\",namespace=~\"$namespace\",pod=~\"$pod\"})"}]},
+    {"id": 5, "type": "stat", "title": "Which containers were OOMKilled?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 6, "x": 6, "y": 6}, "targets": [{"expr": "sum(kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\"})"}]},
+    {"id": 6, "type": "timeseries", "title": "What is the restart rate?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 6, "x": 12, "y": 6}, "targets": [{"expr": "golden_path:pod_restart_rate{namespace=~\"$namespace\",pod=~\"$pod\"}"}]},
+    {"id": 7, "type": "table", "title": "Are HPAs constrained?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 3, "x": 18, "y": 6}, "targets": [{"expr": "kube_horizontalpodautoscaler_status_condition{condition=~\"AbleToScale|ScalingActive\",status=\"false\",namespace=~\"$namespace\"}"}]},
+    {"id": 8, "type": "table", "title": "Are PDBs blocking disruption?", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 6, "w": 3, "x": 21, "y": 6}, "targets": [{"expr": "kube_poddisruptionbudget_status_expected_pods{namespace=~\"$namespace\"} - kube_poddisruptionbudget_status_current_healthy{namespace=~\"$namespace\"}"}]}
+  ]
+}
+
