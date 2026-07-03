@@ -6,6 +6,10 @@ grafana:
   defaultDashboardsEnabled: false
   defaultDatasourceUid: prometheus
   replicas: 2
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
   sidecar:
     dashboards:
       enabled: true
@@ -33,6 +37,9 @@ grafana:
       memory: 512Mi
 prometheus:
   prometheusSpec:
+    externalLabels:
+      cluster: production
+      environment: production
     replicas: 2
     retention: 15d
     resources:
@@ -50,6 +57,17 @@ prometheus:
               storage: 100Gi
     podAntiAffinity: soft
 alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: "null"
+      group_by: ["alertname", "namespace", "workload"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+    receivers:
+      - name: "null"
   alertmanagerSpec:
     replicas: 2
     resources:

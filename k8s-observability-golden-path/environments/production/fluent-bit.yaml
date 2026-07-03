@@ -1,9 +1,40 @@
 kind: DaemonSet
+rbac:
+  create: true
+  eventsAccess: true
 serviceMonitor:
   enabled: true
   namespace: observability
+  selector:
+    release: kube-prometheus-stack
 podLabels:
   app.kubernetes.io/part-of: observability-golden-path
+luaScripts:
+  labels.lua: |
+    function container_labels(tag, ts, record)
+      local k = record["kubernetes"] or {}
+      local labels = k["labels"] or {}
+      record["cluster"] = "production"
+      record["environment"] = "production"
+      record["source"] = "container"
+      record["namespace"] = k["namespace_name"] or "unknown"
+      record["container"] = k["container_name"] or "unknown"
+      record["pod"] = k["pod_name"] or "unknown"
+      record["workload"] = labels["app.kubernetes.io/name"] or labels["app"] or labels["k8s-app"] or k["pod_name"] or "unknown"
+      return 1, ts, record
+    end
+
+    function event_labels(tag, ts, record)
+      local metadata = record["metadata"] or {}
+      local involved = record["involvedObject"] or {}
+      record["cluster"] = "production"
+      record["environment"] = "production"
+      record["source"] = "kubernetes-events"
+      record["namespace"] = metadata["namespace"] or involved["namespace"] or "default"
+      record["reason"] = record["reason"] or "Unknown"
+      record["type"] = record["type"] or "Normal"
+      return 1, ts, record
+    end
 config:
   service: |
     [SERVICE]
@@ -22,20 +53,49 @@ config:
         Mem_Buf_Limit     50MB
         Skip_Long_Lines   On
         DB                /var/log/flb_kube.db
+
+    [INPUT]
+        Name              kubernetes_events
+        Tag               kube.events
+        Interval_Sec      10
+        Kube_URL          https://kubernetes.default.svc
+        Kube_CA_File      /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File   /var/run/secrets/kubernetes.io/serviceaccount/token
   filters: |
     [FILTER]
         Name                kubernetes
-        Match               kube.*
+        Match               kube.var.log.containers.*
         Merge_Log           On
         Keep_Log            Off
         K8S-Logging.Parser  On
+
+    [FILTER]
+        Name                lua
+        Match               kube.var.log.containers.*
+        script              /fluent-bit/scripts/labels.lua
+        call                container_labels
+
+    [FILTER]
+        Name                lua
+        Match               kube.events
+        script              /fluent-bit/scripts/labels.lua
+        call                event_labels
   outputs: |
     [OUTPUT]
         Name                  loki
-        Match                 kube.*
+        Match                 kube.var.log.containers.*
         Host                  loki-gateway.observability.svc.cluster.local
         Port                  80
-        Labels                cluster=production,environment=production,namespace=$kubernetes['namespace_name'],workload=$kubernetes['labels']['app'],pod=$kubernetes['pod_name'],container=$kubernetes['container_name']
+        Labels                cluster=$cluster,environment=$environment,namespace=$namespace,workload=$workload,container=$container,source=$source
+        Structured_Metadata   pod=$pod
+        Retry_Limit           False
+
+    [OUTPUT]
+        Name                  loki
+        Match                 kube.events
+        Host                  loki-gateway.observability.svc.cluster.local
+        Port                  80
+        Labels                cluster=$cluster,environment=$environment,source=$source,namespace=$namespace,reason=$reason,type=$type
         Retry_Limit           False
 resources:
   requests:

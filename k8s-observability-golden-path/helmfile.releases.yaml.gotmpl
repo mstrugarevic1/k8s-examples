@@ -32,6 +32,9 @@ releases:
     version: 61.9.0
     values:
       - environments/{{ .Environment.Name }}/prometheus.yaml
+      {{- if and (eq .Environment.Name "production") (isFile "environments/production/alertmanager-receiver.yaml") }}
+      - environments/production/alertmanager-receiver.yaml
+      {{- end }}
 
   - name: loki
     namespace: observability

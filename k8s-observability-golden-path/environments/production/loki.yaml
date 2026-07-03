@@ -23,57 +23,130 @@ loki:
       s3ForcePathStyle: true
   limits_config:
     retention_period: 15d
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    ingestion_rate_mb: 16
+    ingestion_burst_size_mb: 32
+    max_query_parallelism: 32
+    split_queries_by_interval: 15m
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
+
 deploymentMode: Distributed
+
+singleBinary:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
 gateway:
   enabled: true
   replicas: 2
-  podDisruptionBudget:
-    maxUnavailable: 1
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/component: gateway
-read:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  maxUnavailable: 1
+
+distributor:
   replicas: 2
-  podDisruptionBudget:
-    maxUnavailable: 1
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/component: read
-write:
+  maxUnavailable: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+ingester:
   replicas: 3
-  podDisruptionBudget:
-    maxUnavailable: 1
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/component: write
-backend:
-  replicas: 3
-  podDisruptionBudget:
-    maxUnavailable: 1
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/component: backend
-singleBinary:
-  replicas: 0
+  maxUnavailable: 1
+  zoneAwareReplication:
+    enabled: false
+  persistence:
+    enabled: true
+    claims:
+      - name: data
+        size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      memory: 2Gi
+
+querier:
+  replicas: 2
+  maxUnavailable: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+queryFrontend:
+  replicas: 2
+  maxUnavailable: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+queryScheduler:
+  replicas: 2
+  maxUnavailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+indexGateway:
+  replicas: 2
+  maxUnavailable: 1
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+compactor:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+
 chunksCache:
   enabled: true
 resultsCache:
   enabled: true
 test:
   enabled: false
+

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-pull-failing
+  namespace: observability-fixtures
+  labels:
+    app: image-pull-failing
+spec:
+  containers:
+    - name: image-pull-failing
+      image: registry.invalid/golden-path/missing:latest
+      imagePullPolicy: Always
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 32Mi
+
