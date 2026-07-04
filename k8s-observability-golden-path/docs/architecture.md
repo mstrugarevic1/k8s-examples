@@ -1,7 +1,17 @@
 # Architecture
 
-![Architecture](images/Architecture.png)
+The repository keeps orchestration in Helmfile and user workflow in Make.
 
-Application logs flow through Fluent Bit into Loki. Kubernetes and node metrics flow into Prometheus through node-exporter, kube-state-metrics, Fluent Bit metrics, and Loki metrics. Grafana reads Prometheus and Loki, and Prometheus sends alerts to Alertmanager.
+```text
+Makefile -> scripts/resolve-config.sh -> helmfile.yaml.gotmpl
+                                  |-> Grafana dashboard ConfigMaps
+                                  |-> PrometheusRule resources
 
-Dashboard screenshots are stored under [docs/images](images/).
+kube-state-metrics/node-exporter/kubelet -> Prometheus
+Fluent Bit container logs ----------------> Loki
+Fluent Bit Kubernetes Events -------------> Loki
+Grafana ----------------------------------> Prometheus + Loki
+Prometheus -------------------------------> Alertmanager
+```
+
+Single-cluster Prometheus dashboards use namespace/workload variables and repository recording rules. They do not filter raw kube-state-metrics, kubelet, node-exporter, or cAdvisor metrics by `cluster`.

@@ -2,7 +2,6 @@ kind: DaemonSet
 rbac:
   create: true
   eventsAccess: true
-  nodeAccess: false
 service:
   port: 2020
 podLabels:
@@ -25,7 +24,7 @@ config:
         Path              /var/log/containers/*.log
         Parser            cri
         Tag               kube.*
-        Mem_Buf_Limit     50MB
+        Mem_Buf_Limit     8MB
         Skip_Long_Lines   On
         DB                /var/log/flb_kube.db
         storage.type      filesystem
@@ -58,17 +57,7 @@ config:
         call                event_labels
 resources:
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 20m
+    memory: 48Mi
   limits:
-    cpu: 500m
-    memory: 256Mi
-tolerations:
-  - operator: Exists
-topologySpreadConstraints:
-  - maxSkew: 1
-    topologyKey: kubernetes.io/hostname
-    whenUnsatisfiable: ScheduleAnyway
-    labelSelector:
-      matchLabels:
-        app.kubernetes.io/name: fluent-bit
+    memory: 128Mi

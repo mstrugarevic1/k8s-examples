@@ -1,0 +1,26 @@
+{
+  "uid": "golden-path-stack-health",
+  "title": "Observability Stack Health",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "tags": ["golden-path"],
+  "templating": {"list": []},
+  "panels": [
+    {"id": 1, "title": "Prometheus Targets Down", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(up == 0) or vector(0)"}]},
+    {"id": 2, "title": "Prometheus Ingestion Rate", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(prometheus_tsdb_head_samples_appended_total[5m]))"}]},
+    {"id": 3, "title": "Scrape Failures", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m])) or vector(0)"}]},
+    {"id": 4, "title": "Rule Evaluation Failures", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(prometheus_rule_evaluation_failures_total[5m])) or vector(0)"}]},
+    {"id": 5, "title": "Prometheus TSDB Storage Usage", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "prometheus_tsdb_storage_blocks_bytes / clamp_min(prometheus_tsdb_size_retentions_total or prometheus_tsdb_storage_blocks_bytes, 1)"}]},
+    {"id": 6, "title": "Alertmanager Readiness", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(up{job=~\".*alertmanager.*\"} == 1)"}]},
+    {"id": 7, "title": "Grafana Readiness", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(up{job=~\".*grafana.*\"} == 1)"}]},
+    {"id": 8, "title": "Loki Ingestion Rate", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(loki_distributor_lines_received_total[5m])) or sum(rate(loki_request_duration_seconds_count{route=~\".*push.*\"}[5m]))"}]},
+    {"id": 9, "title": "Loki Request Errors", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(loki_request_duration_seconds_count{status_code=~\"5..\"}[5m])) or vector(0)"}]},
+    {"id": 10, "title": "Loki Query Latency", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{route=~\".*query.*\"}[5m])))"}]},
+    {"id": 11, "title": "Loki Discarded Records", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum by (reason) (rate(loki_discarded_samples_total[5m]))"}]},
+    {"id": 12, "title": "Loki Component/Ring Health", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "loki_ring_members"}]},
+    {"id": 13, "title": "Fluent Bit Input/Output Rate", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(fluentbit_input_records_total[5m]))"}, {"refId": "B", "expr": "sum(rate(fluentbit_output_proc_records_total[5m]))"}]},
+    {"id": 14, "title": "Fluent Bit Retries", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(fluentbit_output_retries_total[5m])) or vector(0)"}]},
+    {"id": 15, "title": "Fluent Bit Dropped Records", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(fluentbit_output_dropped_records_total[5m])) or vector(0)"}]}
+  ]
+}

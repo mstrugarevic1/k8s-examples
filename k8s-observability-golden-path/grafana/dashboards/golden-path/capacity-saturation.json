@@ -1,0 +1,30 @@
+{
+  "uid": "golden-path-capacity-saturation",
+  "title": "Capacity & Saturation",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "tags": ["golden-path"],
+  "templating": {"list": [
+    {"name": "namespace", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_namespace_status_phase, namespace)", "refresh": 1, "multi": true, "includeAll": true, "current": {"text": "All", "value": "$__all"}}
+  ]},
+  "panels": [
+    {"id": 1, "title": "Node CPU Utilization", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum by (node) (rate(container_cpu_usage_seconds_total{container!=\"\",image!=\"\"}[5m]) * on(namespace,pod) group_left(node) kube_pod_info) / clamp_min(sum by (node) (kube_node_status_allocatable{resource=\"cpu\"}), 1)"}]},
+    {"id": 2, "title": "Node Memory Utilization", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum by (node) (container_memory_working_set_bytes{container!=\"\",image!=\"\"} * on(namespace,pod) group_left(node) kube_pod_info) / clamp_min(sum by (node) (kube_node_status_allocatable{resource=\"memory\"}), 1)"}]},
+    {"id": 3, "title": "CPU Request Ratio", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_cpu_request_ratio"}]},
+    {"id": 4, "title": "Memory Request Ratio", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_memory_request_ratio"}]},
+    {"id": 5, "title": "CPU Limit Overcommit", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\"}) / clamp_min(sum(kube_node_status_allocatable{resource=\"cpu\"}), 1)"}]},
+    {"id": 6, "title": "Memory Limit Overcommit", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(kube_pod_container_resource_limits{resource=\"memory\"}) / clamp_min(sum(kube_node_status_allocatable{resource=\"memory\"}), 1)"}]},
+    {"id": 7, "title": "CPU Headroom", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "clamp_min(1 - golden_path:cluster_cpu_request_ratio, 0)"}]},
+    {"id": 8, "title": "Memory Headroom", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "clamp_min(1 - golden_path:cluster_memory_request_ratio, 0)"}]},
+    {"id": 9, "title": "Top Namespaces by CPU", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "topk(10, golden_path:namespace_cpu_usage{namespace=~\"$namespace\"})"}]},
+    {"id": 10, "title": "Top Namespaces by Memory", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "topk(10, golden_path:namespace_memory_usage{namespace=~\"$namespace\"})"}]},
+    {"id": 11, "title": "Top Workloads by CPU", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "topk(10, sum by (namespace,workload) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",container!=\"\",image!=\"\"}[5m]) * on(namespace,pod) group_left(workload) namespace_workload_pod:kube_pod_owner:relabel))"}]},
+    {"id": 12, "title": "Top Workloads by Memory", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "topk(10, sum by (namespace,workload) (container_memory_working_set_bytes{namespace=~\"$namespace\",container!=\"\",image!=\"\"} * on(namespace,pod) group_left(workload) namespace_workload_pod:kube_pod_owner:relabel))"}]},
+    {"id": 13, "title": "Containers Without Requests", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "kube_pod_container_info{namespace=~\"$namespace\",container!=\"\"} unless on(namespace,pod,container) kube_pod_container_resource_requests{resource=~\"cpu|memory\"}"}]},
+    {"id": 14, "title": "Containers Approaching Limits", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum by (namespace,pod,container) (container_memory_working_set_bytes{namespace=~\"$namespace\",container!=\"\",image!=\"\"}) / clamp_min(sum by (namespace,pod,container) (kube_pod_container_resource_limits{namespace=~\"$namespace\",resource=\"memory\"}), 1) > 0.8"}]},
+    {"id": 15, "title": "Unschedulable Pods", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "kube_pod_status_unschedulable{namespace=~\"$namespace\"} == 1"}]},
+    {"id": 16, "title": "PVC Usage and Remaining Capacity", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:pvc_usage_ratio{namespace=~\"$namespace\"}"}, {"refId": "B", "expr": "kubelet_volume_stats_available_bytes{namespace=~\"$namespace\"}"}]},
+    {"id": 17, "title": "Node Pressure Conditions", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "kube_node_status_condition{condition=~\"DiskPressure|MemoryPressure|PIDPressure\",status=\"true\"} == 1"}]}
+  ]
+}

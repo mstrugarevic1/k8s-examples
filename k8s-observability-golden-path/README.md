@@ -1,116 +1,135 @@
 # Kubernetes Observability Golden Path
 
-Reusable Kubernetes monitoring and logging baseline for small local clusters and production-like clusters. The golden path is the working default: pinned charts, Git-provisioned dashboards, actionable alerts, runbooks, logs, Kubernetes Events, and validation commands.
+Reliable Kubernetes observability baseline installed with Helmfile through Make.
 
-## Stack
+## What It Installs
 
-- kube-prometheus-stack `61.9.0`: Prometheus, Alertmanager, Grafana, kube-state-metrics, node-exporter
-- Loki `6.12.0`
-- Fluent Bit `0.47.10`
-- Helmfile
-- Makefile
+- kube-prometheus-stack: Prometheus, Alertmanager, Grafana, kube-state-metrics, node-exporter, and default kube-prometheus rules
+- Loki
+- Fluent Bit for container logs and Kubernetes Events
+- Git-provisioned Grafana folder `Golden Path` with exactly five dashboards
+- Repository-owned Prometheus recording rules and gap-filling alerts
+- Demo workload and live validators
+
+## Scope and Non-goals
+
+This is cluster observability. It does not provide application request rate, latency, or error rate unless applications, ingress controllers, or service meshes expose those metrics. It does not install Tempo, OpenTelemetry Collector, Mimir, Thanos, service mesh dashboards, or business metrics.
 
 ## Architecture
 
-The single architecture diagram is maintained in [docs/architecture.md](docs/architecture.md).
+```text
+Kubernetes metrics -> ServiceMonitor/PodMonitor -> Prometheus -> Grafana
+Container logs ----> Fluent Bit ---------------> Loki ------> Grafana
+Kubernetes Events -> Fluent Bit ---------------> Loki
+Prometheus alerts -----------------------------> Alertmanager
+```
 
-## Prerequisites
+## Requirements
 
-- Kubernetes context for Kind, Minikube, or another cluster
-- `kubectl`
-- `helm`
-- `helmfile`
-- `promtool`
-- `ruby`
+- Kubernetes cluster with a default StorageClass, or set `STORAGE_CLASS`
+- `kubectl`, `helm`, `helmfile`, `python3`, `jq`, `promtool`
+- `shellcheck` for optional shell linting
 
-## Local Quick Start
+## Quick Start
 
 ```bash
-git clone <repository>
-cd k8s-observability-golden-path
-
-make prerequisites
-make install PROFILE=local
+make doctor
+make install PROFILE=kind
 make validate
+make demo-up
+make test
 make grafana
 ```
 
+Use `PROFILE=local` for Minikube, Docker Desktop, k3d, or a small development cluster with a working default StorageClass.
+
 ## Production Configuration
 
-Local uses lightweight Loki single binary mode with short retention. Production uses Loki distributed mode with distributor, ingester, querier, query-frontend, query-scheduler, index-gateway, compactor, and gateway components.
+`PROFILE=production` is a reference profile, not a universal production promise. It uses persistent Prometheus and Alertmanager storage, single-replica Grafana with a PVC-backed SQLite database, and Loki `Distributed` mode with object storage.
 
-Production requires S3-compatible object storage. Do not put credentials in Git. Provide credentials through workload identity, an external secret, or the secret method required by your Loki deployment.
+Minimum practical production shape: at least 3 worker nodes, a working default or selected StorageClass, object storage for Loki, and enough capacity for the requests in `environments/production/`.
 
-Required for `make install PROFILE=production`:
+Required production inputs:
 
 ```bash
-export LOKI_S3_BUCKET=<bucket>
-export LOKI_S3_REGION=<region>
-export LOKI_S3_ENDPOINT=<endpoint>
-make install PROFILE=production
+export LOKI_OBJECT_STORE_BUCKET=<bucket>
+export LOKI_OBJECT_STORE_REGION=<region>
+export LOKI_OBJECT_STORE_ENDPOINT=<optional-endpoint>
+make install PROFILE=production CONFIRM_PRODUCTION=yes
 ```
 
-Production values also enable persistent Prometheus storage, multiple useful replicas, PDBs where supported by the chart, topology spreading or anti-affinity, resource requests/limits, retention, and query limits.
+Do not commit object-store credentials. Use workload identity, an existing Secret, or an external secret controller.
 
-Alertmanager defaults to a null receiver. For production, copy `environments/production/alertmanager-receiver.example.yaml` to `environments/production/alertmanager-receiver.yaml` and replace the Slack webhook placeholder outside Git.
+## Storage
+
+- Prometheus uses `prometheus.prometheusSpec.storageSpec`.
+- Loki kind/local use SingleBinary mode with filesystem PVC.
+- Loki production uses object storage and Distributed microservices.
+- Grafana uses one replica. Persistence is enabled in production and dashboards remain Git-provisioned.
+- Alertmanager uses persistent storage in production so silences and notification state survive restarts.
+- `make uninstall` keeps PVCs. `make purge CONFIRM_PURGE=yes` deletes PVC data.
+
+## Configuration Variables
+
+`PROFILE`, `NAMESPACE`, `CLUSTER_NAME`, `ENVIRONMENT`, `STORAGE_CLASS`, `PROMETHEUS_STORAGE_SIZE`, `PROMETHEUS_RETENTION`, `LOKI_STORAGE_SIZE`, `LOKI_RETENTION`, `GRAFANA_STORAGE_SIZE`, `ALERTMANAGER_STORAGE_SIZE`.
+
+`NAMESPACE` defaults to `observability`. If `CLUSTER_NAME` is unset, it is derived from the current Kubernetes context and sanitized for labels. `ENVIRONMENT` is independent from `CLUSTER_NAME`.
 
 ## Make Targets
 
-- `make prerequisites`: check tools, current Kubernetes context, and Helm repos.
-- `make install PROFILE=local`: install the local profile.
-- `make install PROFILE=production`: install the production profile.
-- `make status`: show installed observability resources.
-- `make validate`: render both profiles, check rules with `promtool`, validate dashboards, targets, and Loki queries.
-- `make grafana`: port-forward Grafana to <http://localhost:3000>.
-- `make test`: deploy fixtures, check metrics, container logs, Kubernetes Events, custom alerts, dashboard queries, and remove fixtures.
-- `make uninstall`: remove rules, dashboards, and Helm releases.
+Run `make help` for the target list. Write targets print the Kubernetes context and refuse production writes unless `CONFIRM_PRODUCTION=yes`.
 
 ## Dashboards
 
-Only these dashboards are provisioned:
+Exactly five dashboards are provisioned under `Golden Path`:
 
-- [Cluster Overview](docs/images/cluster-overview.png)
-- [Workload Reliability](docs/images/workload-reliability.png)
-- [Capacity and Efficiency](docs/images/capacity-and-efficiency.png)
-- [Logs and Events](docs/images/logs-and-events.png)
-- [Observability Stack Health](docs/images/observability-stack-health.png)
+- Cluster Health
+- Workload Health
+- Capacity & Saturation
+- Logs & Events
+- Observability Stack Health
 
-Variables: `cluster`, `namespace`, `workload`, `pod`, `container`.
+Prometheus dashboard queries do not assume raw Kubernetes metrics have a `cluster` label. Loki queries use Fluent Bit labels: `cluster`, `environment`, `namespace`, `workload`, `container`, `source`, `reason`, and `type`.
 
 ## Alerts
 
-Only these alerts are installed:
+kube-prometheus-stack default rules are enabled. This repository adds only gap-filling alerts for Fluent Bit drops/retries, Loki discards/ingestion failures, and PVC pressure. Every custom alert has a runbook under `runbooks/`.
 
-- `NodeNotReady`
-- `WorkloadUnavailable`
-- `PodCrashLooping`
-- `ContainerOOMKilled`
-- `PodStuckPending`
-- `PersistentVolumeAlmostFull`
-- `PrometheusTargetDown`
-- `LokiIngestionFailing`
-- `LokiDiscardingLogs`
-- `FluentBitDroppingLogs`
-
-Each alert has `summary`, `description`, `impact`, `dashboard_url`, and absolute `runbook_url` annotations.
-
-## Testing
-
-Fluent Bit collects container logs and Kubernetes Events. Event labels are limited to `cluster`, `environment`, `source=kubernetes-events`, `namespace`, `reason`, and `type`; event messages are not labels.
-
-`make test` deploys fixtures for CrashLoopBackOff, Pending Pod, failed readiness, OOMKilled, and Kubernetes Warning Events. It verifies Prometheus metrics, Loki container logs, Loki Kubernetes Events, and expected custom alert state before cleanup.
-
-`make validate` performs static validation and live checks against an installed stack. Run it after `make install`.
-
-## Cleanup
+## Demo and Tests
 
 ```bash
-make uninstall
+make demo-up
+make demo-failures
+make demo-reset
+make demo-down
+make test
 ```
 
-## Limitations
+Failure fixtures are isolated in `golden-path-demo` and do not use absurd CPU or memory requests.
 
-- No tracing, Tempo, OpenTelemetry, service mesh metrics, or business metrics.
-- The local profile is intentionally small and uses short retention.
-- Production S3 credentials are not managed here.
-- Screenshots are generated from a Kind demo cluster, not production traffic.
+## Upgrade Procedure
+
+Update `versions.yaml`, review official chart values, run:
+
+```bash
+make validate
+make template PROFILE=kind
+make template PROFILE=local
+```
+
+Then install on a disposable cluster and run `make demo-up && make test`.
+
+## Troubleshooting
+
+- Storage failures: run `make doctor` and confirm the default or selected StorageClass.
+- Empty dashboards: run `make demo-up`, wait two minutes, then `make test`.
+- Grafana password: run `make credentials`.
+- Loki production failures: verify object-store bucket, region, endpoint, and workload identity or Secret wiring.
+
+## Security
+
+No credentials belong in Git. The static validator scans tracked files for common secret-looking assignments, but that is a guardrail, not a replacement for review.
+
+## Version Pins
+
+Pins live in `versions.yaml`. Chart repositories are the official prometheus-community, grafana, and fluent Helm repositories.

@@ -1,0 +1,16 @@
+charts:
+  kubePrometheusStack:
+    repository: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    version: 87.6.0
+    appVersion: v0.92.1
+  loki:
+    repository: https://grafana.github.io/helm-charts
+    chart: loki
+    version: 7.0.0
+    appVersion: 3.6.7
+  fluentBit:
+    repository: https://fluent.github.io/helm-charts
+    chart: fluent-bit
+    version: 0.57.8
+    appVersion: 5.0.8

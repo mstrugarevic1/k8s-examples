@@ -1,0 +1,9 @@
+expected_non_empty_panels:
+  - Ready Nodes / Total Nodes
+  - Running / Pending / Failed Pods
+  - Workload Readiness Ratio
+  - Log Ingestion Rate
+  - Log Volume by Namespace/Workload
+  - Container Log Explorer
+  - Prometheus Targets Down
+  - Prometheus Ingestion Rate

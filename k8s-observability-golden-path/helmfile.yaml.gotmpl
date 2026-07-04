@@ -1,0 +1,185 @@
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: fluent
+    url: https://fluent.github.io/helm-charts
+
+helmDefaults:
+  atomic: true
+  wait: true
+  timeout: 900
+
+environments:
+  kind: {}
+  local: {}
+  production: {}
+
+---
+{{ $versions := readFile "versions.yaml" | fromYaml }}
+{{ $profile := .Environment.Name }}
+{{ $namespace := env "NAMESPACE" | default "observability" }}
+{{ $cluster := env "CLUSTER_NAME" | default "unset" }}
+{{ $environment := env "ENVIRONMENT" | default $profile }}
+{{ $storageClass := env "STORAGE_CLASS" | default "" }}
+{{ $promSize := env "PROMETHEUS_STORAGE_SIZE" | default "8Gi" }}
+{{ $promRetention := env "PROMETHEUS_RETENTION" | default "24h" }}
+{{ $lokiSize := env "LOKI_STORAGE_SIZE" | default "10Gi" }}
+{{ $lokiRetention := env "LOKI_RETENTION" | default "24h" }}
+{{ $grafanaSize := env "GRAFANA_STORAGE_SIZE" | default "2Gi" }}
+{{ $alertmanagerSize := env "ALERTMANAGER_STORAGE_SIZE" | default "2Gi" }}
+releases:
+  - name: kube-prometheus-stack
+    namespace: {{ $namespace }}
+    createNamespace: true
+    chart: prometheus-community/kube-prometheus-stack
+    version: {{ $versions.charts.kubePrometheusStack.version }}
+    values:
+      - environments/{{ $profile }}/kube-prometheus-stack.yaml
+      - fullnameOverride: kube-prometheus-stack
+        grafana:
+          defaultDashboardsEnabled: false
+          defaultDatasourceUid: prometheus
+          persistence:
+            size: {{ $grafanaSize | quote }}
+          sidecar:
+            dashboards:
+              enabled: true
+              label: grafana_dashboard
+              labelValue: "1"
+              searchNamespace: {{ $namespace }}
+              provider:
+                folder: Golden Path
+            datasources:
+              enabled: true
+          additionalDataSources:
+            - name: Loki
+              uid: loki
+              type: loki
+              access: proxy
+              url: http://loki-gateway.{{ $namespace }}.svc.cluster.local
+              isDefault: false
+        prometheus:
+          prometheusSpec:
+            externalLabels:
+              cluster: {{ $cluster | quote }}
+              environment: {{ $environment | quote }}
+            retention: {{ $promRetention | quote }}
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  {{- if $storageClass }}
+                  storageClassName: {{ $storageClass | quote }}
+                  {{- end }}
+                  resources:
+                    requests:
+                      storage: {{ $promSize | quote }}
+        alertmanager:
+          alertmanagerSpec:
+            portName: http-web
+            {{- if eq $profile "production" }}
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  {{- if $storageClass }}
+                  storageClassName: {{ $storageClass | quote }}
+                  {{- end }}
+                  resources:
+                    requests:
+                      storage: {{ $alertmanagerSize | quote }}
+            {{- end }}
+      {{- if and (eq $profile "production") (isFile "environments/production/alertmanager-receiver.yaml") }}
+      - environments/production/alertmanager-receiver.yaml
+      {{- end }}
+
+  - name: loki
+    namespace: {{ $namespace }}
+    createNamespace: true
+    chart: grafana/loki
+    version: {{ $versions.charts.loki.version }}
+    values:
+      - environments/{{ $profile }}/loki.yaml
+      - loki:
+          limits_config:
+            retention_period: {{ $lokiRetention | quote }}
+        singleBinary:
+          persistence:
+            {{- if or (eq $profile "kind") (eq $profile "local") }}
+            enabled: true
+            size: {{ $lokiSize | quote }}
+            {{- if $storageClass }}
+            storageClass: {{ $storageClass | quote }}
+            {{- end }}
+            {{- else }}
+            enabled: false
+            {{- end }}
+      {{- if eq $profile "production" }}
+      - loki:
+          storage:
+            bucketNames:
+              chunks: {{ requiredEnv "LOKI_OBJECT_STORE_BUCKET" | quote }}
+              ruler: {{ requiredEnv "LOKI_OBJECT_STORE_BUCKET" | quote }}
+              admin: {{ requiredEnv "LOKI_OBJECT_STORE_BUCKET" | quote }}
+            s3:
+              region: {{ requiredEnv "LOKI_OBJECT_STORE_REGION" | quote }}
+              endpoint: {{ env "LOKI_OBJECT_STORE_ENDPOINT" | quote }}
+      {{- end }}
+
+  - name: fluent-bit
+    namespace: {{ $namespace }}
+    createNamespace: true
+    chart: fluent/fluent-bit
+    version: {{ $versions.charts.fluentBit.version }}
+    values:
+      - environments/{{ $profile }}/fluent-bit.yaml
+      - serviceMonitor:
+          enabled: true
+          namespace: {{ $namespace }}
+          selector:
+            release: kube-prometheus-stack
+        luaScripts:
+          labels.lua: |
+            function container_labels(tag, ts, record)
+              local k = record["kubernetes"] or {}
+              local labels = k["labels"] or {}
+              local owner = k["docker_id"] or "unknown"
+              record["cluster"] = {{ $cluster | quote }}
+              record["environment"] = {{ $environment | quote }}
+              record["source"] = "container"
+              record["namespace"] = k["namespace_name"] or "unknown"
+              record["container"] = k["container_name"] or "unknown"
+              record["pod"] = k["pod_name"] or "unknown"
+              record["workload"] = labels["app.kubernetes.io/name"] or labels["app"] or labels["k8s-app"] or labels["app.kubernetes.io/instance"] or owner or "unknown"
+              return 1, ts, record
+            end
+            function event_labels(tag, ts, record)
+              local metadata = record["metadata"] or {}
+              local involved = record["involvedObject"] or {}
+              record["cluster"] = {{ $cluster | quote }}
+              record["environment"] = {{ $environment | quote }}
+              record["source"] = "kubernetes-events"
+              record["namespace"] = metadata["namespace"] or involved["namespace"] or "default"
+              record["reason"] = record["reason"] or "Unknown"
+              record["type"] = record["type"] or "Normal"
+              return 1, ts, record
+            end
+        config:
+          outputs: |
+            [OUTPUT]
+                Name                  loki
+                Match                 kube.var.log.containers.*
+                Host                  loki-gateway.{{ $namespace }}.svc.cluster.local
+                Port                  80
+                Labels                cluster=$cluster,environment=$environment,namespace=$namespace,workload=$workload,container=$container,source=$source
+                Structured_Metadata   pod=$pod
+                Retry_Limit           10
+            [OUTPUT]
+                Name                  loki
+                Match                 kube.events
+                Host                  loki-gateway.{{ $namespace }}.svc.cluster.local
+                Port                  80
+                Labels                cluster=$cluster,environment=$environment,source=$source,namespace=$namespace,reason=$reason,type=$type
+                Retry_Limit           10

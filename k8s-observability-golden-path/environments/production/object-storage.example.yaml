@@ -1,0 +1,9 @@
+# Do not commit real credentials. Prefer workload identity or an ExternalSecret.
+# Required install-time environment variables:
+#   LOKI_OBJECT_STORE_BUCKET
+#   LOKI_OBJECT_STORE_REGION
+# Optional:
+#   LOKI_OBJECT_STORE_ENDPOINT
+#
+# If static credentials are unavoidable, create an existing Secret outside Git
+# and reference it through global.extraEnvFrom in environments/production/loki.yaml.

@@ -1,0 +1,23 @@
+{
+  "uid": "golden-path-logs-events",
+  "title": "Logs & Events",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "tags": ["golden-path"],
+  "templating": {"list": [
+    {"name": "namespace", "type": "query", "datasource": {"type": "loki", "uid": "loki"}, "query": "label_values(namespace)", "refresh": 1, "multi": true, "includeAll": true, "current": {"text": "golden-path-demo", "value": "golden-path-demo"}},
+    {"name": "workload", "type": "query", "datasource": {"type": "loki", "uid": "loki"}, "query": "label_values({namespace=~\"$namespace\",source=\"container\"}, workload)", "refresh": 1, "multi": true, "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "pod", "type": "constant", "query": ".*", "current": {"text": ".*", "value": ".*"}},
+    {"name": "container", "type": "query", "datasource": {"type": "loki", "uid": "loki"}, "query": "label_values({namespace=~\"$namespace\",source=\"container\"}, container)", "refresh": 1, "multi": true, "includeAll": true, "current": {"text": "All", "value": "$__all"}}
+  ]},
+  "panels": [
+    {"id": 1, "title": "Log Ingestion Rate", "type": "timeseries", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "sum(rate({source=\"container\",namespace=~\"$namespace\"}[$__range]))"}]},
+    {"id": 2, "title": "Error and Warning Log Rate", "type": "timeseries", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "sum by (namespace,workload) (rate({source=\"container\",namespace=~\"$namespace\",workload=~\"$workload\",container=~\"$container\"} |~ \"(?i)(error|warn|failed|exception)\" [$__range]))"}]},
+    {"id": 3, "title": "Log Volume by Namespace/Workload", "type": "table", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "sum by (namespace,workload) (rate({source=\"container\",namespace=~\"$namespace\",workload=~\"$workload\"}[$__range]))"}]},
+    {"id": 4, "title": "Noisiest Workloads", "type": "table", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "topk(10, sum by (namespace,workload) (rate({source=\"container\",namespace=~\"$namespace\",workload=~\"$workload\"}[$__range])))"}]},
+    {"id": 5, "title": "Kubernetes Warning Event Rate by Reason", "type": "timeseries", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "sum by (reason) (rate({source=\"kubernetes-events\",namespace=~\"$namespace\",type=\"Warning\"}[$__range]))"}]},
+    {"id": 6, "title": "Kubernetes Warning Events", "type": "logs", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "{source=\"kubernetes-events\",namespace=~\"$namespace\",type=\"Warning\"}"}]},
+    {"id": 7, "title": "Container Log Explorer", "type": "logs", "datasource": {"type": "loki", "uid": "loki"}, "targets": [{"refId": "A", "expr": "{source=\"container\",namespace=~\"$namespace\",workload=~\"$workload\",container=~\"$container\"} | pod=~\"$pod\""}]}
+  ]
+}

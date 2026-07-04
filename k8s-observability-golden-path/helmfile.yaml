@@ -1,7 +1,0 @@
-environments:
-  local: {}
-  production: {}
-
----
-helmfiles:
-  - path: helmfile.releases.yaml.gotmpl

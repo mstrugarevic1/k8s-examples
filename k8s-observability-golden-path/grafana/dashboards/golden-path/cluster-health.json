@@ -1,0 +1,26 @@
+{
+  "uid": "golden-path-cluster-health",
+  "title": "Cluster Health",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "tags": ["golden-path"],
+  "templating": {"list": [
+    {"name": "namespace", "type": "query", "datasource": {"type": "prometheus", "uid": "prometheus"}, "query": "label_values(kube_namespace_status_phase, namespace)", "refresh": 1, "multi": true, "includeAll": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "pending_threshold", "type": "constant", "query": "900", "current": {"text": "900", "value": "900"}}
+  ]},
+  "panels": [
+    {"id": 1, "title": "Ready Nodes / Total Nodes", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})"}, {"refId": "B", "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"})"}]},
+    {"id": 2, "title": "Running / Pending / Failed Pods", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum by (phase) (kube_pod_status_phase{namespace=~\"$namespace\",phase=~\"Running|Pending|Failed\"})"}]},
+    {"id": 3, "title": "Unavailable Deployments and StatefulSets", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(golden_path:workload_unavailable_replicas{namespace=~\"$namespace\"}) or vector(0)"}]},
+    {"id": 4, "title": "Pods Pending Longer Than Threshold", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(((time() - kube_pod_created{namespace=~\"$namespace\"}) > $pending_threshold) * on(namespace,pod) group_left() (kube_pod_status_phase{namespace=~\"$namespace\",phase=\"Pending\"} == 1)) or vector(0)"}]},
+    {"id": 5, "title": "Restart Rate", "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(golden_path:pod_restart_rate{namespace=~\"$namespace\"}) or vector(0)"}]},
+    {"id": 6, "title": "OOMKilled Containers", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"$namespace\",reason=\"OOMKilled\"} == 1"}]},
+    {"id": 7, "title": "CPU Utilization", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_cpu_utilization_ratio"}]},
+    {"id": 8, "title": "Memory Utilization", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_memory_utilization_ratio"}]},
+    {"id": 9, "title": "CPU Requests / Allocatable", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_cpu_request_ratio"}]},
+    {"id": 10, "title": "Memory Requests / Allocatable", "type": "gauge", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:cluster_memory_request_ratio"}]},
+    {"id": 11, "title": "PVC Usage", "type": "table", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "golden_path:pvc_usage_ratio{namespace=~\"$namespace\"}"}]},
+    {"id": 12, "title": "Active Actionable Alerts", "type": "stat", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(ALERTS{alertstate=~\"pending|firing\",alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0)"}]}
+  ]
+}

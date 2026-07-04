@@ -1,4 +1,5 @@
 .helmfile/
 *.log
 tmp/
-
+__pycache__/
+lessons_learned.md

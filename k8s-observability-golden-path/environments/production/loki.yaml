@@ -13,47 +13,41 @@ loki:
           period: 24h
   storage:
     type: s3
-    bucketNames:
-      chunks: "${LOKI_S3_BUCKET}"
-      ruler: "${LOKI_S3_BUCKET}"
-      admin: "${LOKI_S3_BUCKET}"
     s3:
-      region: "${LOKI_S3_REGION}"
-      endpoint: "${LOKI_S3_ENDPOINT}"
-      s3ForcePathStyle: true
+      s3ForcePathStyle: false
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
   limits_config:
-    retention_period: 15d
     reject_old_samples: true
     reject_old_samples_max_age: 168h
     ingestion_rate_mb: 16
     ingestion_burst_size_mb: 32
     max_query_parallelism: 32
     split_queries_by_interval: 15m
-  compactor:
-    retention_enabled: true
-    delete_request_store: s3
 
 deploymentMode: Distributed
 
 singleBinary:
   replicas: 0
+backend:
+  replicas: 0
 read:
   replicas: 0
 write:
-  replicas: 0
-backend:
   replicas: 0
 
 gateway:
   enabled: true
   replicas: 2
+  maxUnavailable: 1
   resources:
     requests:
       cpu: 100m
       memory: 128Mi
     limits:
+      cpu: 500m
       memory: 256Mi
-  maxUnavailable: 1
 
 distributor:
   replicas: 2
@@ -63,6 +57,7 @@ distributor:
       cpu: 250m
       memory: 512Mi
     limits:
+      cpu: 1
       memory: 1Gi
 
 ingester:
@@ -80,6 +75,7 @@ ingester:
       cpu: 500m
       memory: 1Gi
     limits:
+      cpu: 2
       memory: 2Gi
 
 querier:
@@ -90,6 +86,7 @@ querier:
       cpu: 250m
       memory: 512Mi
     limits:
+      cpu: 1
       memory: 1Gi
 
 queryFrontend:
@@ -100,6 +97,7 @@ queryFrontend:
       cpu: 250m
       memory: 512Mi
     limits:
+      cpu: 1
       memory: 1Gi
 
 queryScheduler:
@@ -110,6 +108,7 @@ queryScheduler:
       cpu: 100m
       memory: 256Mi
     limits:
+      cpu: 500m
       memory: 512Mi
 
 indexGateway:
@@ -123,6 +122,7 @@ indexGateway:
       cpu: 250m
       memory: 512Mi
     limits:
+      cpu: 1
       memory: 1Gi
 
 compactor:
@@ -135,7 +135,11 @@ compactor:
       cpu: 250m
       memory: 512Mi
     limits:
+      cpu: 1
       memory: 1Gi
+
+ruler:
+  replicas: 1
 
 monitoring:
   serviceMonitor:
@@ -149,4 +153,3 @@ resultsCache:
   enabled: true
 test:
   enabled: false
-
