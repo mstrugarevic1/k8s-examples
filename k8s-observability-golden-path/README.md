@@ -17,12 +17,7 @@ This is cluster observability. It does not provide application request rate, lat
 
 ## Architecture
 
-```text
-Kubernetes metrics -> ServiceMonitor/PodMonitor -> Prometheus -> Grafana
-Container logs ----> Fluent Bit ---------------> Loki ------> Grafana
-Kubernetes Events -> Fluent Bit ---------------> Loki
-Prometheus alerts -----------------------------> Alertmanager
-```
+![Kubernetes observability architecture](docs/assets/architecture.png)
 
 ## Requirements
 
