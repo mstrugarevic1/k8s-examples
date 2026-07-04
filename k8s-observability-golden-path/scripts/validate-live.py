@@ -17,7 +17,11 @@ def wait_http(url, timeout=60):
     while time.time() < deadline:
         try:
             with urllib.request.urlopen(url, timeout=5) as resp:
-                return json.loads(resp.read().decode())
+                body = resp.read().decode()
+                try:
+                    return json.loads(body)
+                except json.JSONDecodeError:
+                    return body
         except Exception as exc:
             last = exc
             time.sleep(2)
@@ -47,7 +51,7 @@ def main():
     grafana = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/kube-prometheus-stack-grafana", "3000:80"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         wait_http("http://127.0.0.1:9090/-/ready")
-        wait_http("http://127.0.0.1:3100/ready")
+        wait_http("http://127.0.0.1:3100/loki/api/v1/status/buildinfo")
         wait_http("http://127.0.0.1:3000/api/health")
         expected = ["--expected", "tests/expected-panels.yaml"] if args.demo else []
         run(["python3", "scripts/validate-dashboards.py", "--prom-url", "http://127.0.0.1:9090", "--loki-url", "http://127.0.0.1:3100", *expected])
