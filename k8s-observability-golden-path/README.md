@@ -1,6 +1,97 @@
 # Kubernetes Observability Golden Path
 
-Reliable Kubernetes observability baseline installed with Helmfile through Make.
+## Purpose
+
+This repository provides an opinionated Kubernetes observability baseline that can be installed on a cluster using Helmfile and Make.
+
+The goal is not to provide every possible metric or dashboard. It provides a small, consistent set of operational dashboards covering:
+
+- cluster health
+- workload health
+- capacity and saturation
+- logs and Kubernetes Events
+- health of the observability stack itself
+
+The dashboards, alerts, recording rules, log pipeline, storage configuration, demo workloads, and validation scripts are maintained together as one installable baseline.
+
+## Tested Environment
+
+The primary development and validation environment is a local Kind cluster.
+
+The `kind` profile is intended to provide a complete, reproducible demonstration of the observability stack without requiring a cloud provider.
+
+```bash
+make doctor
+make install PROFILE=kind
+make demo-up
+make test
+make grafana
+```
+
+The dashboards primarily use metrics exposed by:
+
+- kube-state-metrics
+- kubelet and cAdvisor
+- node-exporter
+- Kubernetes control-plane components
+- Prometheus
+- Alertmanager
+- Loki
+- Fluent Bit
+
+Kind nodes run as containers. Resource usage, storage, network, and saturation values should therefore be treated as demonstration data rather than production-capacity measurements.
+
+Cloud-provider, managed Kubernetes, cloud load-balancer, and cloud CSI metrics are not required.
+
+## Expected Result
+
+After installation, Grafana contains a provisioned folder named `Golden Path` with five dashboards:
+
+- Cluster Health
+- Workload Health
+- Capacity & Saturation
+- Logs & Events
+- Observability Stack Health
+
+The dashboards are committed to Git and provisioned automatically. No manual Grafana dashboard import is required.
+
+## Dashboard Preview
+
+### Cluster Health
+
+![Cluster Health dashboard](docs/assets/dashboard-cluster-health.png)
+
+### Workload Health
+
+![Workload Health dashboard](docs/assets/dashboard-workload-health.png)
+
+### Capacity & Saturation
+
+![Capacity and Saturation dashboard](docs/assets/dashboard-capacity-saturation.png)
+
+### Logs & Events
+
+![Logs and Events dashboard](docs/assets/dashboard-logs-events.png)
+
+### Observability Stack Health
+
+![Observability Stack Health dashboard](docs/assets/dashboard-observability-stack-health.png)
+
+See [Dashboard documentation](docs/dashboards.md) for dashboard purpose, metrics, variables, and expected behavior.
+
+## What This Baseline Guarantees
+
+For the supported profiles, the repository validates that:
+
+- dashboard JSON is structurally valid
+- dashboard layouts do not contain missing or overlapping panels
+- expected Prometheus and Loki datasources are configured
+- required workloads become ready
+- Prometheus targets are available
+- Loki receives container logs and Kubernetes Events
+- repository-owned recording rules and alerts are loaded
+
+It does not guarantee that every panel contains data at all times. Some panels require a matching workload, generated traffic, an active alert, or a deliberately triggered demo failure.
 
 ## What It Installs
 
