@@ -2,7 +2,7 @@
   "uid": "golden-path-capacity-saturation",
   "title": "Capacity & Saturation",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "timezone": "browser",
   "tags": [
     "golden-path",
@@ -3535,12 +3535,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kube_pod_status_unschedulable{namespace=~\"$namespace\"} == 1",
+          "expr": "sum(kube_pod_status_unschedulable{namespace=~\"$namespace\"} == 1) or vector(0)",
           "instant": true,
-          "legendFormat": "Unschedulable Pods"
+          "legendFormat": "Unschedulable"
         }
       ],
-      "description": "Pods marked unschedulable by the scheduler.",
+      "description": "Count of pods marked unschedulable by the scheduler.",
       "gridPos": {
         "x": 12,
         "y": 12,
@@ -4093,12 +4093,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kube_node_status_condition{condition=~\"DiskPressure|MemoryPressure|PIDPressure\",status=\"true\"} == 1",
+          "expr": "sum(kube_node_status_condition{condition=~\"DiskPressure|MemoryPressure|PIDPressure\",status=\"true\"} == 1) or vector(0)",
           "instant": true,
-          "legendFormat": "Node Pressure Conditions"
+          "legendFormat": "Pressure conditions"
         }
       ],
-      "description": "Nodes reporting disk, memory, or PID pressure.",
+      "description": "Count of active disk, memory, or PID pressure conditions across nodes.",
       "gridPos": {
         "x": 18,
         "y": 12,

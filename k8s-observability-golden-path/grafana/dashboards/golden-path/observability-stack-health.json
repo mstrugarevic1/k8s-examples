@@ -2,7 +2,7 @@
   "uid": "golden-path-stack-health",
   "title": "Observability Stack Health",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "timezone": "browser",
   "tags": [
     "golden-path",
@@ -357,8 +357,8 @@
     },
     {
       "id": 5,
-      "title": "Prometheus TSDB Storage Usage",
-      "type": "gauge",
+      "title": "Prometheus TSDB Block Storage",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -366,12 +366,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "prometheus_tsdb_storage_blocks_bytes / clamp_min(prometheus_tsdb_size_retentions_total or prometheus_tsdb_storage_blocks_bytes, 1)",
-          "legendFormat": "Storage",
+          "expr": "sum(prometheus_tsdb_storage_blocks_bytes)",
+          "legendFormat": "TSDB blocks",
           "instant": true
         }
       ],
-      "description": "Prometheus TSDB block storage usage ratio.",
+      "description": "Current size of persisted Prometheus TSDB blocks. This is not PVC utilization and does not require a storage-capacity denominator.",
       "gridPos": {
         "x": 12,
         "y": 11,
@@ -380,27 +380,17 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "decimals": 2,
+          "unit": "bytes",
+          "decimals": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.7
-              },
-              {
-                "color": "red",
-                "value": 0.85
               }
             ]
-          },
-          "min": 0,
-          "max": 1
+          }
         },
         "overrides": []
       },
@@ -413,8 +403,13 @@
           "fields": ""
         },
         "orientation": "auto",
-        "showThresholdLabels": true,
-        "showThresholdMarkers": true
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
       }
     },
     {

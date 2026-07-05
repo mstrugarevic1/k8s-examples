@@ -2,7 +2,7 @@
   "uid": "golden-path-workload-health",
   "title": "Workload Health",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "timezone": "browser",
   "tags": [
     "golden-path",
@@ -98,12 +98,12 @@
         {
           "refId": "A",
           "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\",deployment=~\"$workload\"}",
-          "legendFormat": "Desired"
+          "legendFormat": "{{deployment}} Desired"
         },
         {
           "refId": "B",
           "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\",deployment=~\"$workload\"}",
-          "legendFormat": "Available"
+          "legendFormat": "{{deployment}} Available"
         }
       ],
       "description": "Desired and available deployment replicas for the selected workload.",
@@ -190,7 +190,7 @@
         {
           "refId": "A",
           "expr": "golden_path:workload_readiness_ratio{namespace=\"$namespace\",workload=~\"$workload\"}",
-          "legendFormat": "Ready",
+          "legendFormat": "{{namespace}} / {{workload}}",
           "instant": true
         }
       ],
@@ -253,7 +253,7 @@
           "refId": "A",
           "expr": "golden_path:workload_unavailable_replicas{namespace=\"$namespace\",workload=~\"$workload\"} > 0",
           "instant": true,
-          "legendFormat": "Unavailable Replicas"
+          "legendFormat": "{{namespace}} / {{workload}}"
         }
       ],
       "description": "Unavailable replicas for the selected workload.",
@@ -318,7 +318,7 @@
           "refId": "A",
           "expr": "kube_pod_container_status_waiting_reason{namespace=\"$namespace\",pod=~\"$pod\",container=~\"$container\",reason=\"CrashLoopBackOff\"} == 1",
           "instant": true,
-          "legendFormat": "CrashLoopBackOff"
+          "legendFormat": "{{pod}} / {{container}}"
         }
       ],
       "description": "Containers currently waiting because of CrashLoopBackOff.",
@@ -478,7 +478,7 @@
           "refId": "A",
           "expr": "kube_pod_container_status_last_terminated_reason{namespace=\"$namespace\",pod=~\"$pod\",container=~\"$container\",reason=\"OOMKilled\"} == 1",
           "instant": true,
-          "legendFormat": "Last OOMKilled"
+          "legendFormat": "{{pod}} / {{container}}"
         }
       ],
       "description": "Containers whose last termination reason was OOMKilled.",

@@ -139,6 +139,8 @@ def static_check():
             raise SystemExit(f"unknown dashboard variable in query: {expr}")
         if FORBIDDEN_QUERY_RE.search(expr):
             raise SystemExit(f"{path} {dash}/{panel} uses cloud/provider-specific metric dependency: {expr}")
+        if "prometheus_tsdb_storage_blocks_bytes" in expr and "prometheus_tsdb_size_retentions_total" in expr:
+            raise SystemExit(f"{path} {dash}/{panel} divides TSDB bytes by retention deletion counter: {expr}")
         seen += 1
     if seen < 20:
         raise SystemExit("too few dashboard queries found")
