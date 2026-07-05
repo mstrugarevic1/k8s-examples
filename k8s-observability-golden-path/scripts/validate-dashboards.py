@@ -20,6 +20,12 @@ EXPECTED_DASHBOARDS = {
     "logs-events.json": ("golden-path-logs-events", "Logs & Events"),
     "observability-stack-health.json": ("golden-path-stack-health", "Observability Stack Health"),
 }
+FORBIDDEN_QUERY_RE = re.compile(
+    r"\b(aws_|azure_|gcp_|gce_|ebs_|efs_|cloudprovider_|cloud_controller_|cloud_controller_manager_|"
+    r"cloud_load_balancer_|loadbalancer_|csi_(aws|azure|gce|gcp|ebs|efs)|"
+    r"(aws|azure|gce|gcp|ebs|efs).*_csi_)",
+    re.IGNORECASE,
+)
 SUBS = {
     "$namespace": "golden-path-demo",
     "$workload": "golden-path-api|golden-path-traffic|.*",
@@ -128,9 +134,11 @@ def static_check():
             raise SystemExit(f"{path} uses unsupported cluster variable")
         validate_panels(path, data)
     seen = 0
-    for _, _, _, _, _, expr in targets():
+    for path, dash, panel, _, _, expr in targets():
         if "$" in expr and not any(k in expr for k in SUBS):
             raise SystemExit(f"unknown dashboard variable in query: {expr}")
+        if FORBIDDEN_QUERY_RE.search(expr):
+            raise SystemExit(f"{path} {dash}/{panel} uses cloud/provider-specific metric dependency: {expr}")
         seen += 1
     if seen < 20:
         raise SystemExit("too few dashboard queries found")

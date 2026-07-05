@@ -3591,7 +3591,7 @@
     },
     {
       "id": 16,
-      "title": "PVC Usage and Remaining Capacity",
+      "title": "PVC Usage and Remaining Capacity (Optional)",
       "type": "table",
       "datasource": {
         "type": "prometheus",
@@ -3611,7 +3611,7 @@
           "instant": true
         }
       ],
-      "description": "PVC usage ratio and remaining bytes for selected namespaces.",
+      "description": "PVC usage ratio and remaining bytes from kubelet volume stats. N/A on Kind when kubelet_volume_stats_* is not emitted by the local storage setup.",
       "gridPos": {
         "x": 0,
         "y": 38,
@@ -3630,7 +3630,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "noValue": "N/A on Kind"
         },
         "overrides": [
           {

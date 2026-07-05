@@ -1159,7 +1159,7 @@
     },
     {
       "id": 11,
-      "title": "PVC Usage",
+      "title": "PVC Usage (Optional)",
       "type": "table",
       "datasource": {
         "type": "prometheus",
@@ -1173,7 +1173,7 @@
           "instant": true
         }
       ],
-      "description": "Persistent volume claims by used capacity ratio.",
+      "description": "Persistent volume claim usage from kubelet volume stats. N/A on Kind when kubelet_volume_stats_* is not emitted by the local storage setup.",
       "gridPos": {
         "x": 12,
         "y": 17,
@@ -1202,7 +1202,8 @@
             ]
           },
           "min": 0,
-          "max": 1
+          "max": 1,
+          "noValue": "N/A on Kind"
         },
         "overrides": [
           {
