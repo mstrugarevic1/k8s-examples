@@ -1,12 +1,67 @@
+# Notification receivers and routing for the production Alertmanager.
+#
+# Copy this file to environments/production/alertmanager-receiver.yaml and set
+# real values. The helmfile loads that file only for the production profile and
+# only when it exists (see helmfile.yaml.gotmpl). The copied file is gitignored
+# so real webhooks and credentials never land in Git.
+#
+# Format is standard Alertmanager configuration. The routing tree decides which
+# alerts reach which receiver; you opt alerts in per severity/alertname instead
+# of notifying on everything.
 alertmanager:
   config:
+    global:
+      resolve_timeout: 5m
+      # SMTP settings are only needed if you use an email receiver.
+      smtp_smarthost: "smtp.example.com:587"
+      smtp_from: "alertmanager@example.com"
+      smtp_auth_username: "alertmanager@example.com"
+      # Do not inline the password. Mount a Secret into Alertmanager by listing
+      # its name under alertmanager.spec.secrets (the operator mounts it under
+      # /etc/vm/secrets/<secret-name>/) and point this at the mounted key.
+      smtp_auth_password_file: /etc/vm/secrets/alertmanager-smtp/password
+      smtp_require_tls: true
+
     route:
-      receiver: slack-platform
+      # Default receiver. "null" drops anything that does not match a child
+      # route below, so nothing is emailed unless a route opts it in.
+      receiver: "null"
       group_by: ["alertname", "namespace", "workload"]
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 4h
+      # Alertmanager evaluates child routes top to bottom and stops at the first
+      # match. `continue: true` lets a matched alert also fall through to later
+      # sibling routes, so order matters: put the more specific email routes
+      # before the broad Slack catch-all.
+      routes:
+        # Critical alerts: email on-call and (via continue) also post to Slack.
+        - receiver: email-oncall
+          matchers:
+            - severity="critical"
+          continue: true
+
+        # Selected warnings: email as well, without emailing every warning.
+        # Must come before the Slack catch-all to be reachable.
+        - receiver: email-oncall
+          matchers:
+            - severity="warning"
+            - alertname=~"GoldenPathPersistentVolumeAlmostFull|LokiIngestionFailures"
+          continue: true
+
+        # Everything else that is critical or warning: Slack only.
+        - receiver: slack-platform
+          matchers:
+            - severity=~"critical|warning"
+
     receivers:
+      - name: "null"
+
+      - name: email-oncall
+        email_configs:
+          - to: "oncall@example.com"
+            send_resolved: true
+
       - name: slack-platform
         slack_configs:
           - api_url: "<slack-webhook-url>"
@@ -14,4 +69,3 @@ alertmanager:
             send_resolved: true
             title: "{{ .CommonLabels.alertname }}"
             text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
-

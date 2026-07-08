@@ -157,7 +157,9 @@ make install PROFILE=production CONFIRM_PRODUCTION=yes
 
 Do not commit object-store credentials. Use workload identity, an existing Secret, or an external secret controller.
 
-By default the production profile installs Alertmanager with the `"null"` receiver, so no notifications are sent. To wire notifications, copy `environments/production/alertmanager-receiver.example.yaml` to `environments/production/alertmanager-receiver.yaml` and set a real receiver. The helmfile loads that file only when it exists.
+By default the production profile installs Alertmanager with the `"null"` receiver, so no notifications are sent. To wire notifications, copy `environments/production/alertmanager-receiver.example.yaml` to `environments/production/alertmanager-receiver.yaml` and set real receivers. The helmfile loads that file only when it exists, and the copied file is gitignored so webhooks and credentials stay out of Git. See [Alert routing and notifications](#alert-routing-and-notifications) for how the routing tree selects which alerts reach which receiver.
+
+Do not inline SMTP passwords or webhook URLs. Mount a Secret into Alertmanager by listing its name under `alertmanager.spec.secrets` and reference the mounted key with `smtp_auth_password_file` (or `api_url_file` for Slack).
 
 ## Storage
 
@@ -194,6 +196,17 @@ Metric queries are PromQL-compatible and served by VictoriaMetrics through a Gra
 ## Alerts
 
 The default kube-prometheus rule groups ship with victoria-metrics-k8s-stack and are evaluated by vmalert. This repository adds only gap-filling alerts for Fluent Bit drops/retries, Loki discards/ingestion failures, and PVC pressure. Every custom alert has a runbook under `runbooks/`.
+
+### Alert routing and notifications
+
+Routing decides which alerts reach which receiver. The pattern is in `environments/production/alertmanager-receiver.example.yaml`:
+
+- The top-level route uses the `"null"` receiver as the default. Alerts opt in through child routes; anything that matches no route is dropped rather than notified.
+- Child routes match on labels such as `severity`, `namespace`, and `alertname`. Matchers support `=`, `!=`, `=~` (regex), and `!~`.
+- Alertmanager evaluates child routes top to bottom and stops at the first match. `continue: true` lets a matched alert also fall through to later sibling routes, so more specific email routes must come before a broad Slack catch-all.
+- `group_by` with `group_wait`/`group_interval` controls batching, so related alerts arrive as one notification instead of many.
+
+The example routes `severity="critical"` and a named set of warnings to an email receiver, and all critical/warning alerts to Slack. Start with critical-only email and add specific warnings by `alertname` as you learn which are actionable.
 
 ## Demo and Tests
 
