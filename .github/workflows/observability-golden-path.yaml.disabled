@@ -1,0 +1,38 @@
+name: Validate Observability Golden Path
+
+on:
+  pull_request:
+    paths:
+      - "k8s-observability-golden-path/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "k8s-observability-golden-path/**"
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: k8s-observability-golden-path
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          curl -fsSL https://github.com/helmfile/helmfile/releases/download/v1.2.1/helmfile_1.2.1_linux_amd64.tar.gz | tar -xz
+          sudo mv helmfile /usr/local/bin/helmfile
+          curl -fsSL https://github.com/prometheus/prometheus/releases/download/v3.7.3/prometheus-3.7.3.linux-amd64.tar.gz | tar -xz
+          sudo mv prometheus-3.7.3.linux-amd64/promtool /usr/local/bin/promtool
+          sudo apt-get update
+          sudo apt-get install -y jq shellcheck python3-yaml
+      - name: Add Helm repos
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo add fluent https://fluent.github.io/helm-charts
+          helm repo update
+      - name: Validate
+        run: make validate
