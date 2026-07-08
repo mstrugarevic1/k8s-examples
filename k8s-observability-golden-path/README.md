@@ -4,6 +4,8 @@
 
 This project provides an opinionated Kubernetes observability baseline that can be installed on a cluster using Helmfile and Make.
 
+"Golden path" here means a reference pattern: a curated, integrated, reproducible starting point that a platform team can adopt and maintain. It is not a certified standard and does not claim organizational endorsement on its own. The value is not broader metric coverage than the upstream charts, which ship many more dashboards. The value is that metrics, logs, Kubernetes Events, alerts, runbooks, storage configuration, and validation are versioned and installed together as one baseline.
+
 The goal is not to provide every possible metric or dashboard. It provides a small, consistent set of operational dashboards covering:
 
 - cluster health
@@ -108,6 +110,8 @@ It does not guarantee that every panel contains data at all times. Some panels r
 ## Scope and Non-goals
 
 This is cluster observability. It does not provide application request rate, latency, or error rate unless applications, ingress controllers, or service meshes expose those metrics. It does not install Tempo, OpenTelemetry Collector, VictoriaLogs, VictoriaTraces, service mesh dashboards, or business metrics.
+
+There are no load balancer or L7 request metrics, by design. Kind has no cloud load balancer to scrape. Cloud load balancer metrics (AWS ELB/ALB, GCP, Azure) live in the provider's monitoring API, not on a Prometheus-style `/metrics` endpoint, so they require a dedicated exporter. L7 request metrics come from an ingress controller or service mesh, none of which this baseline installs. To add them: install an ingress controller or mesh that exposes a ServiceMonitor, or run a cloud metrics exporter in production.
 
 ## Architecture
 
