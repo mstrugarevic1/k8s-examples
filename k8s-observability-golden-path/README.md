@@ -115,8 +115,6 @@ See [Architecture](docs/architecture.md) for the component diagram and release o
 
 ![Kubernetes observability architecture](docs/assets/architecture.png)
 
-The architecture diagram above still shows the previous Prometheus-based revision.
-
 ## Requirements
 
 - Kubernetes cluster with a default StorageClass, or set `STORAGE_CLASS`
