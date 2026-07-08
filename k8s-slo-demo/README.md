@@ -1,6 +1,30 @@
 # Kubernetes SLI/SLO Demo
 
-This repository contains a practical demonstration of Service Level Indicators (SLIs), Service Level Objectives (SLOs), and Service Level Agreements (SLAs) using a Python Flask application on Kubernetes, monitored by Prometheus and Grafana.
+This project contains a practical demonstration of Service Level Indicators (SLIs), Service Level Objectives (SLOs), and Service Level Agreements (SLAs) using a Python Flask application on Kubernetes, monitored by Prometheus and Grafana.
+
+## Table of Contents
+
+* [Purpose](#purpose)
+* [Why SLI, SLO and SLA measurements matter](#why-sli-slo-and-sla-measurements-matter)
+* [Definitions](#definitions)
+* [Demo SLI](#demo-sli)
+* [Practical examples](#practical-examples)
+* [Prerequisites](#prerequisites)
+* [Step-by-Step Workflow](#step-by-step-workflow)
+    * [1. Create or select the Kind cluster](#1-create-or-select-the-kind-cluster)
+    * [2. Build the local image](#2-build-the-local-image)
+    * [3. Load the image into Kind](#3-load-the-image-into-kind)
+    * [4. Deploy the application](#4-deploy-the-application)
+    * [5. Deploy the ServiceMonitor](#5-deploy-the-servicemonitor)
+    * [6. Verify the Prometheus target](#6-verify-the-prometheus-target)
+    * [7. Deploy the load generator](#7-deploy-the-load-generator)
+    * [8. Access Grafana](#8-access-grafana)
+    * [9. Import the Grafana dashboard](#9-import-the-grafana-dashboard)
+* [Interpreting the Dashboard](#interpreting-the-dashboard)
+* [Dashboard Preview](#dashboard-preview)
+* [Verification Commands](#verification-commands)
+* [Troubleshooting](#troubleshooting)
+* [Cleanup](#cleanup)
 
 ## Purpose
 
@@ -80,27 +104,6 @@ For a 99.9% SLO, the allowed error rate is 0.1%. If the app is actually failing 
 ```
 
 A 3x burn rate means the service is consuming its error budget three times faster than planned.
-
-## Table of Contents
-
-* [Prerequisites](#prerequisites)
-* [Demo SLI](#demo-sli)
-* [Practical examples](#practical-examples)
-* [Step-by-Step Workflow](#step-by-step-workflow)
-    * [1. Create or select the Kind cluster](#1-create-or-select-the-kind-cluster)
-    * [2. Build the local image](#2-build-the-local-image)
-    * [3. Load the image into Kind](#3-load-the-image-into-kind)
-    * [4. Deploy the application](#4-deploy-the-application)
-    * [5. Deploy the ServiceMonitor](#5-deploy-the-servicemonitor)
-    * [6. Verify the Prometheus target](#6-verify-the-prometheus-target)
-    * [7. Deploy the load generator](#7-deploy-the-load-generator)
-    * [8. Access Grafana](#8-access-grafana)
-    * [9. Import the Grafana dashboard](#9-import-the-grafana-dashboard)
-* [Interpreting the Dashboard](#interpreting-the-dashboard)
-* [Dashboard Preview](#dashboard-preview)
-* [Verification Commands](#verification-commands)
-* [Troubleshooting](#troubleshooting)
-* [Cleanup](#cleanup)
 
 ## Prerequisites
 

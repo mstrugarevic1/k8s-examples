@@ -1,2 +1,4 @@
 lessons_learned.md
-
+.DS_Store
+__pycache__/
+*.pyc

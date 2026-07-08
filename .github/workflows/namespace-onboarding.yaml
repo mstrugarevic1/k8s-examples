@@ -2,9 +2,13 @@ name: Validate Namespace Onboarding
 
 on:
   pull_request:
+    paths:
+      - "k8s-namespace-onboarding/**"
   push:
     branches:
       - main
+    paths:
+      - "k8s-namespace-onboarding/**"
 
 jobs:
   validate:

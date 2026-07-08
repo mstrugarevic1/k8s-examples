@@ -13,16 +13,7 @@ It is not a production platform template. Treat the examples as learning materia
 
 ## Examples
 
-* **[SLO Demo](./slo-demo/README.md)**: A practical demonstration of Service Level Objectives (SLOs) using Prometheus and Grafana.
-* **[Gatekeeper Policy Examples](./gatekeeper-policy-examples/README.md)**: A set of OPA Gatekeeper policies for enforcing cluster-wide constraints.
-* **[Kubernetes Namespace Onboarding](./k8s-namespace-onboarding/README.md)**: A small generator that turns one team YAML into namespace-scoped Kubernetes onboarding manifests.
-* **[Kubernetes Observability Golden Path](./k8s-observability-golden-path/README.md)**: A Helmfile baseline for Prometheus, Grafana, Loki, Fluent Bit, dashboards, alerts, and runbooks.
-
-## Technologies Demonstrated
-
-- Kubernetes manifests and workload configuration.
-- Prometheus and Grafana for SLO-style observability demos.
-- Prometheus, Grafana, Loki, and Fluent Bit for cluster observability.
-- OPA Gatekeeper policies and constraints.
-- Git-based namespace onboarding with generated RBAC, quotas, limits, and NetworkPolicy.
-- Practical deployment and validation workflows for test clusters.
+* **[SLO Demo](./k8s-slo-demo/README.md)**: A demonstration of Service Level Objectives (SLOs) and error budgets using a Flask application, Prometheus, and Grafana.
+* **[Gatekeeper Policies](./k8s-gatekeeper-policies/README.md)**: OPA Gatekeeper ConstraintTemplates and Constraints for enforcing cluster-wide rules, with good and bad example manifests.
+* **[Namespace Onboarding](./k8s-namespace-onboarding/README.md)**: A small generator that turns one team YAML into namespace-scoped manifests: RBAC, quotas, limits, and NetworkPolicy.
+* **[Observability Golden Path](./k8s-observability-golden-path/README.md)**: A Helmfile baseline for Prometheus, Grafana, Loki, Fluent Bit, dashboards, alerts, and runbooks.

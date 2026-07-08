@@ -27,11 +27,9 @@ k8s-namespace-onboarding/
 ├── requirements.txt
 ├── teams/
 ├── generated/
-├── templates/
 ├── scripts/
 ├── tests/
-├── docs/
-└── .github/workflows/
+└── docs/
 ```
 
 ## Prerequisites

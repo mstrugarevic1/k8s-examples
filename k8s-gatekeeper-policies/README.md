@@ -1,6 +1,6 @@
-# OPA Gatekeeper Examples for Kubernetes
+# OPA Gatekeeper Policies
 
-This repository contains practical examples of OPA Gatekeeper policies for Kubernetes. The goal is education and demonstration of how to use ConstraintTemplate and Constraint resources to enforce security and operational rules.
+This project contains practical examples of OPA Gatekeeper policies for Kubernetes. The goal is education and demonstration of how to use ConstraintTemplate and Constraint resources to enforce security and operational rules.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ This repository contains practical examples of OPA Gatekeeper policies for Kuber
 If you don't already have Gatekeeper installed, you can install it with the following command:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml
+kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.22.2/deploy/gatekeeper.yaml
 ```
 
 ## Project Structure

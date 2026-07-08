@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository provides an opinionated Kubernetes observability baseline that can be installed on a cluster using Helmfile and Make.
+This project provides an opinionated Kubernetes observability baseline that can be installed on a cluster using Helmfile and Make.
 
 The goal is not to provide every possible metric or dashboard. It provides a small, consistent set of operational dashboards covering:
 
