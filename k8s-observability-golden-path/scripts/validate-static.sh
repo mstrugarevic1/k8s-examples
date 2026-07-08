@@ -26,12 +26,12 @@ for profile in kind local production; do
   test -s "$tmp/$profile.yaml"
 done
 
-echo "==> checking Prometheus rules"
-for file in prometheus/*.yaml; do
-  sed -e 's/__CLUSTER_NAME__/static-cluster/g' -e 's/__ENVIRONMENT__/test/g' -e 's/__NAMESPACE__/observability/g' "$file"
+echo "==> checking VictoriaMetrics rules"
+for file in rules/*.yaml; do
+  sed -e 's/__NAMESPACE__/observability/g' "$file"
   echo "---"
-done >"$tmp/prometheusrules.yaml"
-ruby - "$tmp/prometheusrules.yaml" "$tmp/rules.yaml" <<'RB'
+done >"$tmp/vmrules.yaml"
+ruby - "$tmp/vmrules.yaml" "$tmp/rules.yaml" <<'RB'
 require "yaml"
 docs = YAML.load_stream(File.read(ARGV[0])).compact
 groups = docs.flat_map { |doc| doc.fetch("spec").fetch("groups") }
@@ -69,8 +69,8 @@ for path in Path(".").rglob("*"):
     if not path.is_file() or ".git" in path.parts or path.suffix in {".png", ".jpg", ".jpeg"}:
         continue
     text = path.read_text(errors="ignore")
-    if "__CLUSTER_NAME__" in text and not (str(path).startswith("prometheus/") or str(path).startswith("scripts/")):
-        bad.append(f"unresolved cluster placeholder in {path}")
+    if "__NAMESPACE__" in text and not (str(path).startswith("rules/") or str(path).startswith("scripts/")):
+        bad.append(f"unresolved namespace placeholder in {path}")
     if re.search(r'namespace:\s*observability\b', text) and str(path) not in {"README.md"}:
         bad.append(f"hardcoded observability namespace in {path}")
     if secretish.search(text) and "placeholder" not in text.lower():

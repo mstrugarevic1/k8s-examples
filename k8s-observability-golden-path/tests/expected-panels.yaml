@@ -5,5 +5,7 @@ expected_non_empty_panels:
   - Log Ingestion Rate
   - Log Volume by Namespace/Workload
   - Container Log Explorer
-  - Prometheus Targets Down
-  - Prometheus Ingestion Rate
+  - Scrape Targets Down
+  - Metrics Ingestion Rate
+  - Loki Ingestion Rate
+  - Fluent Bit Input / Output Rate

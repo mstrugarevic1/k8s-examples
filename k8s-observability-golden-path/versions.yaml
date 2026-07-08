@@ -1,9 +1,14 @@
 charts:
-  kubePrometheusStack:
+  prometheusOperatorCrds:
     repository: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    version: 87.6.0
+    chart: prometheus-operator-crds
+    version: 30.0.1
     appVersion: v0.92.1
+  victoriaMetricsK8sStack:
+    repository: https://victoriametrics.github.io/helm-charts
+    chart: victoria-metrics-k8s-stack
+    version: 0.86.0
+    appVersion: v1.147.0
   loki:
     repository: https://grafana.github.io/helm-charts
     chart: loki

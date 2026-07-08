@@ -1,10 +1,9 @@
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
 metadata:
   name: golden-path-alerts
   labels:
     app.kubernetes.io/part-of: observability-golden-path
-    release: kube-prometheus-stack
 spec:
   groups:
     - name: golden-path.alerts
@@ -14,67 +13,57 @@ spec:
           for: 10m
           labels:
             severity: warning
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
           annotations:
             summary: "Fluent Bit is dropping output records"
             description: "Fluent Bit has dropped output records for more than 10 minutes."
             impact: "Container logs or Kubernetes Events may be missing from Loki."
-            dashboard_url: "http://kube-prometheus-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
-            runbook_url: "runbooks/FluentBitDroppingRecords.md"
+            dashboard_url: "http://victoria-metrics-k8s-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
+            runbook: "runbooks/FluentBitDroppingRecords.md"
 
         - alert: FluentBitOutputRetriesSustained
           expr: rate(fluentbit_output_retries_total[5m]) > 0
           for: 15m
           labels:
             severity: warning
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
           annotations:
             summary: "Fluent Bit output retries are sustained"
             description: "Fluent Bit is retrying output delivery, usually because Loki is slow or unavailable."
             impact: "Log delivery latency increases and buffers may fill if the condition continues."
-            dashboard_url: "http://kube-prometheus-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
-            runbook_url: "runbooks/FluentBitOutputRetriesSustained.md"
+            dashboard_url: "http://victoria-metrics-k8s-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
+            runbook: "runbooks/FluentBitOutputRetriesSustained.md"
 
         - alert: LokiDiscardingRecords
           expr: rate(loki_discarded_samples_total[5m]) > 0
           for: 10m
           labels:
             severity: warning
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
           annotations:
             summary: "Loki is discarding records"
             description: "Loki has discarded log samples for more than 10 minutes."
             impact: "Some logs or Kubernetes Events are not searchable."
-            dashboard_url: "http://kube-prometheus-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
-            runbook_url: "runbooks/LokiDiscardingRecords.md"
+            dashboard_url: "http://victoria-metrics-k8s-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
+            runbook: "runbooks/LokiDiscardingRecords.md"
 
         - alert: LokiIngestionFailures
           expr: rate(loki_request_duration_seconds_count{route=~".*push.*",status_code=~"5.."}[5m]) > 0
           for: 10m
           labels:
             severity: warning
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
           annotations:
             summary: "Loki ingestion requests are failing"
             description: "Loki push endpoints are returning 5xx responses."
             impact: "Fluent Bit may retry or drop logs, leaving gaps in Grafana."
-            dashboard_url: "http://kube-prometheus-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
-            runbook_url: "runbooks/LokiIngestionFailures.md"
+            dashboard_url: "http://victoria-metrics-k8s-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-stack-health"
+            runbook: "runbooks/LokiIngestionFailures.md"
 
         - alert: GoldenPathPersistentVolumeAlmostFull
           expr: golden_path:pvc_usage_ratio > 0.85
           for: 15m
           labels:
             severity: warning
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
           annotations:
             summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is almost full"
             description: "PVC usage has stayed above 85 percent for more than 15 minutes."
-            impact: "Prometheus, Loki, Grafana or workloads may fail writes if the volume fills."
-            dashboard_url: "http://kube-prometheus-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-cluster-health"
-            runbook_url: "runbooks/GoldenPathPersistentVolumeAlmostFull.md"
+            impact: "VictoriaMetrics, Loki, Grafana or workloads may fail writes if the volume fills."
+            dashboard_url: "http://victoria-metrics-k8s-stack-grafana.__NAMESPACE__.svc.cluster.local/d/golden-path-cluster-health"
+            runbook: "runbooks/GoldenPathPersistentVolumeAlmostFull.md"

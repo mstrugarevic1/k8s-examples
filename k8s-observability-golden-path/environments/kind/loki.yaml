@@ -47,8 +47,6 @@ gateway:
 monitoring:
   serviceMonitor:
     enabled: true
-    labels:
-      release: kube-prometheus-stack
 
 chunksCache:
   enabled: false

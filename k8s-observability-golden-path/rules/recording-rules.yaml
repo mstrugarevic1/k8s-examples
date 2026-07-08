@@ -1,10 +1,9 @@
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
 metadata:
   name: golden-path-recording-rules
   labels:
     app.kubernetes.io/part-of: observability-golden-path
-    release: kube-prometheus-stack
 spec:
   groups:
     - name: golden-path.recording
@@ -20,9 +19,6 @@ spec:
               kube_pod_info
               * on(namespace,pod) group_left(workload) namespace_workload_pod:kube_pod_owner:relabel
             ), 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:workload_unavailable_replicas
           expr: |
@@ -39,69 +35,42 @@ spec:
                 "workload", "$1", "statefulset", "(.*)"
               )
             )
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:pod_restart_rate
           expr: sum by (namespace, pod) (rate(kube_pod_container_status_restarts_total[15m]))
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:cluster_cpu_utilization_ratio
           expr: |
             sum(rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m]))
             /
             clamp_min(sum(kube_node_status_allocatable{resource="cpu"}), 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:cluster_memory_utilization_ratio
           expr: |
             sum(container_memory_working_set_bytes{container!="",image!=""})
             /
             clamp_min(sum(kube_node_status_allocatable{resource="memory"}), 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:cluster_cpu_request_ratio
           expr: |
             sum(kube_pod_container_resource_requests{resource="cpu"})
             /
             clamp_min(sum(kube_node_status_allocatable{resource="cpu"}), 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:cluster_memory_request_ratio
           expr: |
             sum(kube_pod_container_resource_requests{resource="memory"})
             /
             clamp_min(sum(kube_node_status_allocatable{resource="memory"}), 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:namespace_cpu_usage
           expr: sum by (namespace) (rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m]))
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:namespace_memory_usage
           expr: sum by (namespace) (container_memory_working_set_bytes{container!="",image!=""})
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__
 
         - record: golden_path:pvc_usage_ratio
           expr: |
             kubelet_volume_stats_used_bytes
             /
             clamp_min(kubelet_volume_stats_capacity_bytes, 1)
-          labels:
-            cluster: __CLUSTER_NAME__
-            environment: __ENVIRONMENT__

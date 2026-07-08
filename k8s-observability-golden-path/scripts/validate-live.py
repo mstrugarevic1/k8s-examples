@@ -39,24 +39,26 @@ def main():
         key, value = line.replace("export ", "", 1).split("=", 1)
         vals[key] = value.strip("'")
     ns = vals["NAMESPACE"]
+    if vals["PROFILE"] == "production":
+        raise SystemExit("live validation supports the kind and local profiles")
 
-    run(["kubectl", "-n", ns, "get", "helmrelease"], check=False)
-    for svc in ["kube-prometheus-stack-prometheus", "kube-prometheus-stack-grafana", "loki-gateway"]:
+    for svc in ["vmsingle-vm", "victoria-metrics-k8s-stack-grafana", "loki-gateway"]:
         run(["kubectl", "-n", ns, "get", "svc", svc])
-    run(["kubectl", "-n", ns, "wait", "--for=condition=Ready", "pods", "--all", "--timeout=5m"])
+    run(["kubectl", "-n", ns, "wait", "--for=condition=Ready", "pods",
+         "--field-selector=status.phase=Running", "--all", "--timeout=5m"])
     run(["kubectl", "-n", ns, "get", "pvc"])
 
-    prom = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/kube-prometheus-stack-prometheus", "9090:9090"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    vm = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/vmsingle-vm", "8428:8428"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     loki = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/loki-gateway", "3100:80"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    grafana = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/kube-prometheus-stack-grafana", "3000:80"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    grafana = subprocess.Popen(["kubectl", "-n", ns, "port-forward", "svc/victoria-metrics-k8s-stack-grafana", "3000:80"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
-        wait_http("http://127.0.0.1:9090/-/ready")
+        wait_http("http://127.0.0.1:8428/health")
         wait_http("http://127.0.0.1:3100/loki/api/v1/status/buildinfo")
         wait_http("http://127.0.0.1:3000/api/health")
         expected = ["--expected", "tests/expected-panels.yaml"] if args.demo else []
-        run(["python3", "scripts/validate-dashboards.py", "--prom-url", "http://127.0.0.1:9090", "--loki-url", "http://127.0.0.1:3100", *expected])
+        run(["python3", "scripts/validate-dashboards.py", "--prom-url", "http://127.0.0.1:8428", "--loki-url", "http://127.0.0.1:3100", *expected])
     finally:
-        for proc in (prom, loki, grafana):
+        for proc in (vm, loki, grafana):
             proc.terminate()
             try:
                 proc.wait(timeout=5)

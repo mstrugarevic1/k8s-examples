@@ -15,7 +15,7 @@
   "panels": [
     {
       "id": 1,
-      "title": "Prometheus Targets Down",
+      "title": "Scrape Targets Down",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -29,7 +29,7 @@
           "instant": true
         }
       ],
-      "description": "Prometheus scrape targets currently reporting up == 0.",
+      "description": "Number of scrape targets vmagent currently reports as down.",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -80,7 +80,7 @@
     },
     {
       "id": 2,
-      "title": "Prometheus Ingestion Rate",
+      "title": "Metrics Ingestion Rate",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -89,11 +89,11 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(prometheus_tsdb_head_samples_appended_total[5m]))",
+          "expr": "sum(rate(vm_rows_inserted_total[5m]))",
           "legendFormat": "Samples"
         }
       ],
-      "description": "Samples appended to the Prometheus head per second.",
+      "description": "Rows per second ingested into VictoriaMetrics.",
       "gridPos": {
         "x": 0,
         "y": 4,
@@ -176,11 +176,11 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m])) or vector(0)",
+          "expr": "sum(rate(vm_promscrape_scrapes_failed_total[5m])) or vector(0)",
           "legendFormat": "Failures"
         }
       ],
-      "description": "Scrape duplicate timestamp failures per second.",
+      "description": "Failed vmagent scrapes per second.",
       "gridPos": {
         "x": 12,
         "y": 4,
@@ -271,11 +271,11 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(prometheus_rule_evaluation_failures_total[5m])) or vector(0)",
+          "expr": "sum(rate(vmalert_execution_errors_total[5m])) or vector(0)",
           "legendFormat": "Failures"
         }
       ],
-      "description": "Prometheus rule evaluation failures per second.",
+      "description": "vmalert recording and alerting rule execution errors per second.",
       "gridPos": {
         "x": 0,
         "y": 11,
@@ -357,7 +357,7 @@
     },
     {
       "id": 5,
-      "title": "Prometheus TSDB Block Storage",
+      "title": "VictoriaMetrics Storage Size",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -366,12 +366,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(prometheus_tsdb_storage_blocks_bytes)",
+          "expr": "sum(vm_data_size_bytes)",
           "legendFormat": "TSDB blocks",
           "instant": true
         }
       ],
-      "description": "Current size of persisted Prometheus TSDB blocks. This is not PVC utilization and does not require a storage-capacity denominator.",
+      "description": "On-disk size of the VictoriaMetrics data directory.",
       "gridPos": {
         "x": 12,
         "y": 11,
@@ -1675,7 +1675,7 @@
       }
     }
   ],
-  "description": "Golden Path observability stack health for Prometheus, Loki, Fluent Bit, Alertmanager, Grafana, scraping, ingestion, and storage.",
+  "description": "Golden Path observability stack health for VictoriaMetrics, Loki, Fluent Bit, Alertmanager, Grafana, scraping, ingestion, and storage.",
   "time": {
     "from": "now-1h",
     "to": "now"

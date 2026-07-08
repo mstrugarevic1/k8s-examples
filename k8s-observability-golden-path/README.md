@@ -34,14 +34,14 @@ The dashboards primarily use metrics exposed by:
 - kubelet and cAdvisor
 - node-exporter
 - Kubernetes control-plane components
-- Prometheus
+- VictoriaMetrics (vmsingle/vmcluster, vmagent, vmalert)
 - Alertmanager
 - Loki
 - Fluent Bit
 
-Kind nodes run as containers. Resource usage, storage, network, and saturation values should therefore be treated as demonstration data rather than production-capacity measurements.
+Kind nodes run as containers. Resource usage, storage, network, and saturation values should therefore be treated as demonstration data rather than production-capacity measurements. In the kind profile, etcd, kube-scheduler, and kube-controller-manager scraping is disabled because those components bind to 127.0.0.1 inside Kind nodes.
 
-Cloud-provider, managed Kubernetes, cloud load-balancer, and cloud CSI metrics are not required.
+Cloud-provider, managed Kubernetes, cloud load-balancer, and cloud CSI metrics are not required. Installation requires outbound internet access: Helm charts are pulled from their repositories and the stack sync-job downloads the default kube-prometheus rule groups from upstream GitHub.
 
 ## Expected Result
 
@@ -56,6 +56,8 @@ After installation, Grafana contains a provisioned folder named `Golden Path` wi
 The dashboards are committed to Git and provisioned automatically. No manual Grafana dashboard import is required.
 
 ## Dashboard Preview
+
+The screenshots below were taken on the previous Prometheus-based revision of this stack. Panel layout is unchanged; the Observability Stack Health dashboard now shows VictoriaMetrics ingestion and storage panels instead of Prometheus TSDB panels.
 
 ### Cluster Health
 
@@ -85,9 +87,9 @@ For the supported profiles, the repository validates that:
 
 - dashboard JSON is structurally valid
 - dashboard layouts do not contain missing or overlapping panels
-- expected Prometheus and Loki datasources are configured
+- expected VictoriaMetrics and Loki datasources are configured
 - required workloads become ready
-- Prometheus targets are available
+- scrape targets are available
 - Loki receives container logs and Kubernetes Events
 - repository-owned recording rules and alerts are loaded
 
@@ -95,26 +97,33 @@ It does not guarantee that every panel contains data at all times. Some panels r
 
 ## What It Installs
 
-- kube-prometheus-stack: Prometheus, Alertmanager, Grafana, kube-state-metrics, node-exporter, and default kube-prometheus rules
+- prometheus-operator-crds: ServiceMonitor and PrometheusRule CRDs, so the Loki and Fluent Bit charts can create ServiceMonitors that the VictoriaMetrics operator converts
+- victoria-metrics-k8s-stack: VictoriaMetrics operator, vmsingle (kind/local) or vmcluster (production), vmagent, vmalert, Alertmanager, Grafana, kube-state-metrics, node-exporter, and the default kube-prometheus rule groups
 - Loki
 - Fluent Bit for container logs and Kubernetes Events
 - Git-provisioned Grafana folder `Golden Path` with exactly five dashboards
-- Repository-owned Prometheus recording rules and gap-filling alerts
+- Repository-owned recording rules and gap-filling alerts as VMRules
 - Demo workload and live validators
 
 ## Scope and Non-goals
 
-This is cluster observability. It does not provide application request rate, latency, or error rate unless applications, ingress controllers, or service meshes expose those metrics. It does not install Tempo, OpenTelemetry Collector, Mimir, Thanos, service mesh dashboards, or business metrics.
+This is cluster observability. It does not provide application request rate, latency, or error rate unless applications, ingress controllers, or service meshes expose those metrics. It does not install Tempo, OpenTelemetry Collector, VictoriaLogs, VictoriaTraces, service mesh dashboards, or business metrics.
 
 ## Architecture
 
+See [Architecture](docs/architecture.md) for the component diagram and release ordering.
+
 ![Kubernetes observability architecture](docs/assets/architecture.png)
+
+The architecture diagram above still shows the previous Prometheus-based revision.
 
 ## Requirements
 
 - Kubernetes cluster with a default StorageClass, or set `STORAGE_CLASS`
-- `kubectl`, `helm`, `helmfile`, `python3`, `jq`, `promtool`
+- `kubectl`, `helm`, `helmfile`, `python3`, `jq`, `promtool`, `ruby`
 - `shellcheck` for optional shell linting
+
+`promtool` and `ruby` are used by `make validate` (rule syntax checks and YAML parsing).
 
 ## Quick Start
 
@@ -131,7 +140,7 @@ Use `PROFILE=local` for Minikube, Docker Desktop, k3d, or a small development cl
 
 ## Production Configuration
 
-`PROFILE=production` is a reference profile, not a universal production promise. It uses persistent Prometheus and Alertmanager storage, single-replica Grafana with a PVC-backed SQLite database, and Loki `Distributed` mode with object storage.
+`PROFILE=production` is a reference profile, not a universal production promise. It uses VictoriaMetrics cluster mode (vmstorage x3, vmselect x2, vminsert x2, replication factor 2), persistent Alertmanager with two replicas, single-replica Grafana with a PVC-backed SQLite database, and Loki `Distributed` mode with object storage.
 
 Minimum practical production shape: at least 3 worker nodes, a working default or selected StorageClass, object storage for Loki, and enough capacity for the requests in `environments/production/`.
 
@@ -148,7 +157,8 @@ Do not commit object-store credentials. Use workload identity, an existing Secre
 
 ## Storage
 
-- Prometheus uses `prometheus.prometheusSpec.storageSpec`.
+- VictoriaMetrics kind/local use vmsingle with a PVC (`VM_STORAGE_SIZE`, `VM_RETENTION`).
+- VictoriaMetrics production uses vmcluster with PVC-backed vmstorage replicas.
 - Loki kind/local use SingleBinary mode with filesystem PVC.
 - Loki production uses object storage and Distributed microservices.
 - Grafana uses one replica. Persistence is enabled in production and dashboards remain Git-provisioned.
@@ -157,13 +167,13 @@ Do not commit object-store credentials. Use workload identity, an existing Secre
 
 ## Configuration Variables
 
-`PROFILE`, `NAMESPACE`, `CLUSTER_NAME`, `ENVIRONMENT`, `STORAGE_CLASS`, `PROMETHEUS_STORAGE_SIZE`, `PROMETHEUS_RETENTION`, `LOKI_STORAGE_SIZE`, `LOKI_RETENTION`, `GRAFANA_STORAGE_SIZE`, `ALERTMANAGER_STORAGE_SIZE`.
+`PROFILE`, `NAMESPACE`, `CLUSTER_NAME`, `ENVIRONMENT`, `STORAGE_CLASS`, `VM_STORAGE_SIZE`, `VM_RETENTION`, `LOKI_STORAGE_SIZE`, `LOKI_RETENTION`, `GRAFANA_STORAGE_SIZE`, `ALERTMANAGER_STORAGE_SIZE`.
 
-`NAMESPACE` defaults to `observability`. If `CLUSTER_NAME` is unset, it is derived from the current Kubernetes context and sanitized for labels. `ENVIRONMENT` is independent from `CLUSTER_NAME`.
+`NAMESPACE` defaults to `observability`. If `CLUSTER_NAME` is unset, it is derived from the current Kubernetes context and sanitized for labels. `ENVIRONMENT` is independent from `CLUSTER_NAME`. `cluster` and `environment` are attached to all scraped metrics as vmagent external labels and to rule outputs by vmalert.
 
 ## Make Targets
 
-Run `make help` for the target list. Write targets print the Kubernetes context and refuse production writes unless `CONFIRM_PRODUCTION=yes`.
+Run `make help` for the target list. Write targets print the Kubernetes context and refuse production writes unless `CONFIRM_PRODUCTION=yes`. `make metrics` port-forwards the VictoriaMetrics query API (vmsingle on kind/local, vmselect on production).
 
 ## Dashboards
 
@@ -175,11 +185,11 @@ Exactly five dashboards are provisioned under `Golden Path`:
 - Logs & Events
 - Observability Stack Health
 
-Prometheus dashboard queries do not assume raw Kubernetes metrics have a `cluster` label. Loki queries use Fluent Bit labels: `cluster`, `environment`, `namespace`, `workload`, `container`, `source`, `reason`, and `type`.
+Metric queries are PromQL-compatible and served by VictoriaMetrics through a Grafana datasource with uid `prometheus`. Queries do not assume raw Kubernetes metrics have a `cluster` label. Loki queries use Fluent Bit labels: `cluster`, `environment`, `namespace`, `workload`, `container`, `source`, `reason`, and `type`.
 
 ## Alerts
 
-kube-prometheus-stack default rules are enabled. This repository adds only gap-filling alerts for Fluent Bit drops/retries, Loki discards/ingestion failures, and PVC pressure. Every custom alert has a runbook under `runbooks/`.
+The default kube-prometheus rule groups ship with victoria-metrics-k8s-stack and are evaluated by vmalert. This repository adds only gap-filling alerts for Fluent Bit drops/retries, Loki discards/ingestion failures, and PVC pressure. Every custom alert has a runbook under `runbooks/`.
 
 ## Demo and Tests
 
@@ -191,7 +201,7 @@ make demo-down
 make test
 ```
 
-Failure fixtures are isolated in `golden-path-demo` and do not use absurd CPU or memory requests.
+Failure fixtures are isolated in `golden-path-demo` and do not use absurd CPU or memory requests. `make test` supports the kind and local profiles.
 
 ## Upgrade Procedure
 
@@ -210,6 +220,7 @@ Then install on a disposable cluster and run `make demo-up && make test`.
 - Storage failures: run `make doctor` and confirm the default or selected StorageClass.
 - Empty dashboards: run `make demo-up`, wait two minutes, then `make test`.
 - Grafana password: run `make credentials`.
+- Missing default rules: check the victoria-metrics-k8s-stack sync-job logs; it needs outbound access to GitHub.
 - Loki production failures: verify object-store bucket, region, endpoint, and workload identity or Secret wiring.
 
 ## Security
@@ -218,4 +229,4 @@ No credentials belong in Git. The static validator scans tracked files for commo
 
 ## Version Pins
 
-Pins live in `versions.yaml`. Chart repositories are the official prometheus-community, grafana, and fluent Helm repositories.
+Pins live in `versions.yaml`. Chart repositories are the official prometheus-community, victoriametrics, grafana, and fluent Helm repositories.

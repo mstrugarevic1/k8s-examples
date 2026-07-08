@@ -9,7 +9,7 @@ Some logs or Kubernetes Events are not searchable.
 ## Verification commands
 ```bash
 kubectl -n observability logs -l app.kubernetes.io/name=loki --tail=100
-kubectl -n observability port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+make metrics
 ```
 PromQL: `rate(loki_discarded_samples_total[5m])`
 

@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-config_file="$(mktemp)"
-scripts/resolve-config.sh >"$config_file"
-# shellcheck source=/dev/null
-source "$config_file"
-rm -f "$config_file"
-kind="${1:?usage: port-forward.sh grafana|prometheus|loki}"
+eval "$(scripts/resolve-config.sh)"
+kind="${1:?usage: port-forward.sh grafana|metrics|loki}"
 case "$kind" in
-  grafana) svc=kube-prometheus-stack-grafana; local_port=3000; remote_port=80; url=http://localhost:3000 ;;
-  prometheus) svc=kube-prometheus-stack-prometheus; local_port=9090; remote_port=9090; url=http://localhost:9090 ;;
+  grafana) svc=victoria-metrics-k8s-stack-grafana; local_port=3000; remote_port=80; url=http://localhost:3000 ;;
+  metrics)
+    if [[ "$PROFILE" == production ]]; then
+      svc=vmselect-vm; local_port=8481; remote_port=8481; url=http://localhost:8481/select/0/prometheus
+    else
+      svc=vmsingle-vm; local_port=8428; remote_port=8428; url=http://localhost:8428
+    fi ;;
   loki) svc=loki-gateway; local_port=3100; remote_port=80; url=http://localhost:3100 ;;
   *) echo "unknown port-forward target: $kind"; exit 1 ;;
 esac

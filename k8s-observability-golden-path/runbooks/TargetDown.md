@@ -1,14 +1,14 @@
-# PrometheusTargetDown
+# TargetDown
 
 ## Symptoms
-Prometheus target is down.
+vmagent reports a scrape target as down (`up == 0`).
 
 ## Impact
 Metrics and alerts may be missing.
 
 ## Checks
 ```bash
-kubectl -n observability get servicemonitor,podmonitor
+kubectl -n observability get servicemonitor,vmservicescrape,vmpodscrape
 kubectl -n <namespace> get endpoints,svc,pods
 ```
 PromQL: `up == 0`
@@ -17,8 +17,7 @@ PromQL: `up == 0`
 Pod down, service selector mismatch, blocked network, or bad scrape port.
 
 ## Mitigation
-Restore the target or fix its ServiceMonitor.
+Restore the target or fix its ServiceMonitor/VMServiceScrape.
 
 ## Verification
 PromQL: `up{job="<job>",instance="<instance>"}`
-

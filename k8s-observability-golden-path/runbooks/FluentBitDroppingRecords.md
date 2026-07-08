@@ -9,7 +9,7 @@ Container logs or Kubernetes Events may be missing from Loki.
 ## Verification commands
 ```bash
 kubectl -n observability logs -l app.kubernetes.io/name=fluent-bit --tail=100
-kubectl -n observability port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+make metrics
 ```
 PromQL: `rate(fluentbit_output_dropped_records_total[5m])`
 

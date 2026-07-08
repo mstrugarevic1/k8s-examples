@@ -10,11 +10,7 @@ need python3
 need jq
 need promtool
 
-config_file="$(mktemp)"
-scripts/resolve-config.sh >"$config_file"
-# shellcheck source=/dev/null
-source "$config_file"
-rm -f "$config_file"
+eval "$(scripts/resolve-config.sh)"
 
 echo "profile: $PROFILE"
 echo "namespace: $NAMESPACE"
@@ -22,7 +18,7 @@ echo "context: $KUBE_CONTEXT"
 echo "cluster_name: $CLUSTER_NAME"
 echo "environment: $ENVIRONMENT"
 echo "storage_class: ${STORAGE_CLASS:-<default>}"
-echo "prometheus_storage_size: $PROMETHEUS_STORAGE_SIZE"
+echo "vm_storage_size: $VM_STORAGE_SIZE"
 echo "loki_storage_size: $LOKI_STORAGE_SIZE"
 
 kubectl version --client >/dev/null
@@ -43,11 +39,18 @@ else
   }
 fi
 
-for crd in prometheuses.monitoring.coreos.com prometheusrules.monitoring.coreos.com servicemonitors.monitoring.coreos.com; do
+for crd in servicemonitors.monitoring.coreos.com prometheusrules.monitoring.coreos.com; do
   if kubectl get crd "$crd" >/dev/null 2>&1; then
     echo "existing CRD: $crd"
   else
-    echo "CRD will be installed by kube-prometheus-stack: $crd"
+    echo "CRD will be installed by the prometheus-operator-crds release: $crd"
+  fi
+done
+for crd in vmsingles.operator.victoriametrics.com vmagents.operator.victoriametrics.com vmrules.operator.victoriametrics.com; do
+  if kubectl get crd "$crd" >/dev/null 2>&1; then
+    echo "existing CRD: $crd"
+  else
+    echo "CRD will be installed by victoria-metrics-k8s-stack: $crd"
   fi
 done
 

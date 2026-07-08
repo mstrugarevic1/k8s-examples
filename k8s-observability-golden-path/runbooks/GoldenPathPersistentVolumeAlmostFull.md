@@ -4,7 +4,7 @@
 A PVC is above 85 percent used.
 
 ## User impact
-Prometheus, Loki, Grafana, or workloads may fail writes when the volume fills.
+VictoriaMetrics, Loki, Grafana, or workloads may fail writes when the volume fills.
 
 ## Verification commands
 ```bash

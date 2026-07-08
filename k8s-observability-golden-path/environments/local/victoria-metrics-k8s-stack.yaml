@@ -1,30 +1,33 @@
 defaultRules:
-  create: true
+  enabled: true
 
-grafana:
-  replicas: 1
-  persistence:
-    enabled: false
-  serviceMonitor:
-    enabled: true
-    labels:
-      release: kube-prometheus-stack
-  resources:
-    requests:
-      cpu: 50m
-      memory: 192Mi
-    limits:
-      memory: 384Mi
-
-prometheus:
-  prometheusSpec:
-    replicas: 1
+vmsingle:
+  spec:
+    replicaCount: 1
     resources:
       requests:
         cpu: 150m
         memory: 768Mi
       limits:
         memory: 1536Mi
+
+vmagent:
+  spec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 192Mi
+      limits:
+        memory: 384Mi
+
+vmalert:
+  spec:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
 
 alertmanager:
   config:
@@ -38,12 +41,23 @@ alertmanager:
       repeat_interval: 4h
     receivers:
       - name: "null"
-  alertmanagerSpec:
-    replicas: 1
+  spec:
+    replicaCount: 1
     resources:
       requests:
         cpu: 25m
         memory: 96Mi
+
+grafana:
+  replicas: 1
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+    limits:
+      memory: 384Mi
 
 kube-state-metrics:
   resources:

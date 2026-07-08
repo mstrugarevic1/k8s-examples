@@ -1,6 +1,8 @@
 repositories:
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
+  - name: vm
+    url: https://victoriametrics.github.io/helm-charts
   - name: grafana
     url: https://grafana.github.io/helm-charts
   - name: fluent
@@ -23,24 +25,59 @@ environments:
 {{ $cluster := env "CLUSTER_NAME" | default "unset" }}
 {{ $environment := env "ENVIRONMENT" | default $profile }}
 {{ $storageClass := env "STORAGE_CLASS" | default "" }}
-{{ $promSize := env "PROMETHEUS_STORAGE_SIZE" | default "8Gi" }}
-{{ $promRetention := env "PROMETHEUS_RETENTION" | default "24h" }}
+{{ $vmSize := env "VM_STORAGE_SIZE" | default "8Gi" }}
+{{ $vmRetention := env "VM_RETENTION" | default "24h" }}
 {{ $lokiSize := env "LOKI_STORAGE_SIZE" | default "10Gi" }}
 {{ $lokiRetention := env "LOKI_RETENTION" | default "24h" }}
 {{ $grafanaSize := env "GRAFANA_STORAGE_SIZE" | default "2Gi" }}
 {{ $alertmanagerSize := env "ALERTMANAGER_STORAGE_SIZE" | default "2Gi" }}
 releases:
-  - name: kube-prometheus-stack
+  # ServiceMonitor/PrometheusRule CRDs. The Loki and Fluent Bit charts only
+  # create ServiceMonitors when these CRDs already exist, and the VictoriaMetrics
+  # operator converts them to VMServiceScrapes.
+  - name: prometheus-operator-crds
     namespace: {{ $namespace }}
     createNamespace: true
-    chart: prometheus-community/kube-prometheus-stack
-    version: {{ $versions.charts.kubePrometheusStack.version }}
+    chart: prometheus-community/prometheus-operator-crds
+    version: {{ $versions.charts.prometheusOperatorCrds.version }}
+
+  - name: victoria-metrics-k8s-stack
+    namespace: {{ $namespace }}
+    createNamespace: true
+    chart: vm/victoria-metrics-k8s-stack
+    version: {{ $versions.charts.victoriaMetricsK8sStack.version }}
+    needs:
+      - {{ $namespace }}/prometheus-operator-crds
     values:
-      - environments/{{ $profile }}/kube-prometheus-stack.yaml
-      - fullnameOverride: kube-prometheus-stack
+      - environments/{{ $profile }}/victoria-metrics-k8s-stack.yaml
+      - fullnameOverride: vm
+        defaultDashboards:
+          enabled: false
+        defaultDatasources:
+          victoriametrics:
+            datasources:
+              - name: VictoriaMetrics
+                type: prometheus
+                access: proxy
+                uid: prometheus
+                isDefault: true
+          extra:
+            - name: Loki
+              uid: loki
+              type: loki
+              access: proxy
+              url: http://loki-gateway.{{ $namespace }}.svc.cluster.local
+        vmagent:
+          spec:
+            externalLabels:
+              cluster: {{ $cluster | quote }}
+              environment: {{ $environment | quote }}
+        vmalert:
+          spec:
+            externalLabels:
+              cluster: {{ $cluster | quote }}
+              environment: {{ $environment | quote }}
         grafana:
-          defaultDashboardsEnabled: false
-          defaultDatasourceUid: prometheus
           persistence:
             size: {{ $grafanaSize | quote }}
           sidecar:
@@ -51,35 +88,38 @@ releases:
               searchNamespace: {{ $namespace }}
               provider:
                 folder: Golden Path
-            datasources:
-              enabled: true
-          additionalDataSources:
-            - name: Loki
-              uid: loki
-              type: loki
-              access: proxy
-              url: http://loki-gateway.{{ $namespace }}.svc.cluster.local
-              isDefault: false
-        prometheus:
-          prometheusSpec:
-            externalLabels:
-              cluster: {{ $cluster | quote }}
-              environment: {{ $environment | quote }}
-            retention: {{ $promRetention | quote }}
-            storageSpec:
-              volumeClaimTemplate:
-                spec:
-                  accessModes: ["ReadWriteOnce"]
-                  {{- if $storageClass }}
-                  storageClassName: {{ $storageClass | quote }}
-                  {{- end }}
-                  resources:
-                    requests:
-                      storage: {{ $promSize | quote }}
+        {{- if ne $profile "production" }}
+        vmsingle:
+          spec:
+            retentionPeriod: {{ $vmRetention | quote }}
+            storage:
+              accessModes: ["ReadWriteOnce"]
+              {{- if $storageClass }}
+              storageClassName: {{ $storageClass | quote }}
+              {{- end }}
+              resources:
+                requests:
+                  storage: {{ $vmSize | quote }}
+        {{- else }}
+        vmsingle:
+          enabled: false
+        vmcluster:
+          enabled: true
+          spec:
+            retentionPeriod: {{ $vmRetention | quote }}
+            vmstorage:
+              storage:
+                volumeClaimTemplate:
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    {{- if $storageClass }}
+                    storageClassName: {{ $storageClass | quote }}
+                    {{- end }}
+                    resources:
+                      requests:
+                        storage: {{ $vmSize | quote }}
         alertmanager:
-          alertmanagerSpec:
-            portName: http-web
-            {{- if eq $profile "production" }}
+          spec:
             storage:
               volumeClaimTemplate:
                 spec:
@@ -90,7 +130,7 @@ releases:
                   resources:
                     requests:
                       storage: {{ $alertmanagerSize | quote }}
-            {{- end }}
+        {{- end }}
       {{- if and (eq $profile "production") (isFile "environments/production/alertmanager-receiver.yaml") }}
       - environments/production/alertmanager-receiver.yaml
       {{- end }}
@@ -100,6 +140,8 @@ releases:
     createNamespace: true
     chart: grafana/loki
     version: {{ $versions.charts.loki.version }}
+    needs:
+      - {{ $namespace }}/victoria-metrics-k8s-stack
     values:
       - environments/{{ $profile }}/loki.yaml
       - loki:
@@ -133,13 +175,13 @@ releases:
     createNamespace: true
     chart: fluent/fluent-bit
     version: {{ $versions.charts.fluentBit.version }}
+    needs:
+      - {{ $namespace }}/victoria-metrics-k8s-stack
     values:
       - environments/{{ $profile }}/fluent-bit.yaml
       - serviceMonitor:
           enabled: true
           namespace: {{ $namespace }}
-          selector:
-            release: kube-prometheus-stack
         luaScripts:
           labels.lua: |
             function container_labels(tag, ts, record)
