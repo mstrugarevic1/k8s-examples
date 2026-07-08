@@ -9,6 +9,7 @@ need helmfile
 need python3
 need jq
 need promtool
+need ruby
 
 eval "$(scripts/resolve-config.sh)"
 

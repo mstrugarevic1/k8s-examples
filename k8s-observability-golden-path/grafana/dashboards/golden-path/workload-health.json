@@ -2705,7 +2705,20 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "liveNow": false,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "golden-path"
+      ],
+      "targetBlank": false,
+      "title": "Golden Path",
+      "type": "dashboards"
+    }
+  ],
   "annotations": {
     "list": [
       {

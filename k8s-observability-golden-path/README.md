@@ -153,6 +153,8 @@ make install PROFILE=production CONFIRM_PRODUCTION=yes
 
 Do not commit object-store credentials. Use workload identity, an existing Secret, or an external secret controller.
 
+By default the production profile installs Alertmanager with the `"null"` receiver, so no notifications are sent. To wire notifications, copy `environments/production/alertmanager-receiver.example.yaml` to `environments/production/alertmanager-receiver.yaml` and set a real receiver. The helmfile loads that file only when it exists.
+
 ## Storage
 
 - VictoriaMetrics kind/local use vmsingle with a PVC (`VM_STORAGE_SIZE`, `VM_RETENTION`).

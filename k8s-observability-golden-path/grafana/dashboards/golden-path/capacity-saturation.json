@@ -633,7 +633,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -1119,7 +1129,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -1605,7 +1625,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&var-workload=${__data.fields.Workload}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&var-workload=${__data.fields.Workload}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -2091,7 +2121,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&var-workload=${__data.fields.Workload}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&var-workload=${__data.fields.Workload}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -2577,7 +2617,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&var-pod=${__data.fields.Pod}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -3073,7 +3123,17 @@
             ]
           },
           "min": 0,
-          "max": 1
+          "max": 1,
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&var-pod=${__data.fields.Pod}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -4179,7 +4239,20 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "liveNow": false,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "golden-path"
+      ],
+      "targetBlank": false,
+      "title": "Golden Path",
+      "type": "dashboards"
+    }
+  ],
   "annotations": {
     "list": [
       {

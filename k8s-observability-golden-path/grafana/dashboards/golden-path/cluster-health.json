@@ -458,7 +458,17 @@
                 "value": null
               }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Workload Health",
+              "url": "/d/golden-path-workload-health?var-namespace=${__data.fields.Namespace}&var-pod=${__data.fields.Pod}&${__url_time_range}"
+            },
+            {
+              "title": "Logs & Events",
+              "url": "/d/golden-path-logs-events?var-namespace=${__data.fields.Namespace}&${__url_time_range}"
+            }
+          ]
         },
         "overrides": [
           {
@@ -1665,12 +1675,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(ALERTS{alertstate=~\"pending|firing\",alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0)",
+          "expr": "(sum(vmalert_alerts_firing{alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0)) + (sum(vmalert_alerts_pending{alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0))",
           "legendFormat": "Alerts",
           "instant": true
         }
       ],
-      "description": "Pending or firing actionable alerts, excluding watchdog and informational inhibitors.",
+      "description": "Firing and pending actionable alerts reported by vmalert, excluding watchdog and informational inhibitors. Uses vmalert metrics because VictoriaMetrics does not synthesize the Prometheus ALERTS series.",
       "gridPos": {
         "x": 18,
         "y": 0,
@@ -1751,7 +1761,20 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "liveNow": false,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "golden-path"
+      ],
+      "targetBlank": false,
+      "title": "Golden Path",
+      "type": "dashboards"
+    }
+  ],
   "annotations": {
     "list": [
       {
