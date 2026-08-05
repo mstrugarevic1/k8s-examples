@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-arc-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ .Values.dashboard.label }}: {{ .Values.dashboard.labelValue | quote }}
+    app.kubernetes.io/part-of: github-arc-runners
+data:
+  github-arc.json: |-
+{{ .Files.Get "dashboards/github-arc.json" | nindent 4 }}

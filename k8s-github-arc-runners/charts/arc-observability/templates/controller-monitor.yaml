@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arc-controller-metrics
+  namespace: {{ .Values.controllerNamespace }}
+  labels:
+    app.kubernetes.io/name: arc-controller-metrics
+spec:
+  selector:
+    app.kubernetes.io/component: controller-manager
+    app.kubernetes.io/part-of: gha-rs-controller
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: arc-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/part-of: github-arc-runners
+spec:
+  namespaceSelector:
+    matchNames: [{{ .Values.controllerNamespace }}]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: arc-controller-metrics
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.scrapeInterval }}

@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-controller
+  namespace: argocd
+spec:
+  project: github-arc-runners
+  destination:
+    namespace: arc-systems
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: ghcr.io/actions/actions-runner-controller-charts
+    chart: gha-runner-scale-set-controller
+    targetRevision: 0.14.2
+    helm:
+      values: |
+        metrics:
+          controllerManagerAddr: ":8080"
+          listenerAddr: ":8080"
+          listenerEndpoint: /metrics
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: 500m, memory: 512Mi}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

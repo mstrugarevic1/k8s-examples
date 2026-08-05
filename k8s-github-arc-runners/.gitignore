@@ -1,0 +1,4 @@
+.rendered/
+*.secret.yaml
+*.pem
+*.key

@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: arc-organization-runners
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - organization: organization-a
+            githubConfigUrl: https://github.com/organization-a
+            namespace: arc-runners-organization-a
+            runnerScaleSetName: organization-a-runners
+            runnerGroup: default
+            secretName: organization-a-github-app
+          - organization: organization-b
+            githubConfigUrl: https://github.com/organization-b
+            namespace: arc-runners-organization-b
+            runnerScaleSetName: organization-b-runners
+            runnerGroup: default
+            secretName: organization-b-github-app
+  template:
+    metadata:
+      name: 'arc-{{ .organization }}'
+    spec:
+      project: github-arc-runners
+      destination:
+        namespace: '{{ .namespace }}'
+        server: https://kubernetes.default.svc
+      source:
+        repoURL: ghcr.io/actions/actions-runner-controller-charts
+        chart: gha-runner-scale-set
+        targetRevision: 0.14.2
+        helm:
+          values: |
+            githubConfigUrl: {{ .githubConfigUrl }}
+            githubConfigSecret: {{ .secretName }}
+            runnerScaleSetName: {{ .runnerScaleSetName }}
+            runnerGroup: {{ .runnerGroup }}
+            minRunners: 0
+            maxRunners: 5
+            controllerServiceAccount:
+              namespace: arc-systems
+              name: arc-controller-gha-rs-controller
+            template:
+              spec:
+                containers:
+                  - name: runner
+                    resources:
+                      requests: {cpu: 100m, memory: 256Mi}
+                      limits: {cpu: "1", memory: 1Gi}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

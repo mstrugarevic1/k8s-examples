@@ -1,0 +1,17 @@
+# Helm release namespace: arc-runners-organization-a
+githubConfigUrl: https://github.com/organization-a
+githubConfigSecret: organization-a-github-app
+runnerScaleSetName: organization-a-runners
+runnerGroup: default
+minRunners: 0
+maxRunners: 5
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-controller-gha-rs-controller
+template:
+  spec:
+    containers:
+      - name: runner
+        resources:
+          requests: {cpu: 100m, memory: 256Mi}
+          limits: {cpu: "1", memory: 1Gi}

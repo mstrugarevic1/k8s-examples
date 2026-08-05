@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: github-arc-runners
+  namespace: argocd
+spec:
+  description: GitHub ARC Kind lab
+  sourceRepos:
+    - ghcr.io/actions/actions-runner-controller-charts
+    - https://github.com/OWNER/REPOSITORY.git
+  destinations:
+    - namespace: arc-systems
+      server: https://kubernetes.default.svc
+    - namespace: arc-runners-demo
+      server: https://kubernetes.default.svc
+    - namespace: arc-runners-organization-a
+      server: https://kubernetes.default.svc
+    - namespace: arc-runners-organization-b
+      server: https://kubernetes.default.svc
+    - namespace: observability
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding

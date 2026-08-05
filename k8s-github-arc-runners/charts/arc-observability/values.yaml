@@ -1,0 +1,8 @@
+controllerNamespace: arc-systems
+runnerNamespace: arc-runners-demo
+runnerScaleSetName: miroslav-kind-runners
+scrapeInterval: 30s
+
+dashboard:
+  label: grafana_dashboard
+  labelValue: "1"

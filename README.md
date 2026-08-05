@@ -10,3 +10,4 @@ This repository is provided as-is for learning and experimentation, without warr
 * [Gatekeeper Policies](./k8s-gatekeeper-policies/README.md) — OPA Gatekeeper ConstraintTemplates and Constraints for enforcing cluster-wide rules, with good and bad example manifests.
 * [Namespace Onboarding](./k8s-namespace-onboarding/README.md) — A small generator that turns one team YAML into namespace-scoped manifests: RBAC, quotas, limits, and NetworkPolicy.
 * [Observability Golden Path](./k8s-observability-golden-path/README.md) — A Helmfile baseline for VictoriaMetrics, Grafana, Loki, Fluent Bit, dashboards, alerts, and runbooks.
+* [GitHub ARC Runners](./k8s-github-arc-runners/README.md) — Work-in-progress Kind lab for repository-level runner scale sets, native scaling, ARC metrics, and Grafana.

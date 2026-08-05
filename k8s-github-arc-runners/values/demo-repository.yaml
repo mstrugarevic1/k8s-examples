@@ -1,0 +1,52 @@
+githubConfigUrl: https://github.com/OWNER/REPOSITORY
+githubConfigSecret: github-app-credentials
+runnerScaleSetName: miroslav-kind-runners
+minRunners: 0
+maxRunners: 5
+
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-controller-gha-rs-controller
+
+listenerMetrics:
+  counters:
+    gha_started_jobs_total:
+      labels: [name, namespace, organization, repository]
+    gha_completed_jobs_total:
+      labels: [name, namespace, organization, repository, job_result]
+  gauges:
+    gha_assigned_jobs:
+      labels: [name, namespace, organization, repository]
+    gha_running_jobs:
+      labels: [name, namespace, organization, repository]
+    gha_registered_runners:
+      labels: [name, namespace, organization, repository]
+    gha_busy_runners:
+      labels: [name, namespace, organization, repository]
+    gha_min_runners:
+      labels: [name, namespace, organization, repository]
+    gha_max_runners:
+      labels: [name, namespace, organization, repository]
+    gha_desired_runners:
+      labels: [name, namespace, organization, repository]
+    gha_idle_runners:
+      labels: [name, namespace, organization, repository]
+  histograms:
+    gha_job_startup_duration_seconds:
+      labels: [name, namespace, organization, repository]
+    gha_job_execution_duration_seconds:
+      labels: [name, namespace, organization, repository, job_result]
+
+template:
+  spec:
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
