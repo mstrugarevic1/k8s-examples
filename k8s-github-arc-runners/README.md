@@ -4,16 +4,7 @@
 
 This lab installs Actions Runner Controller (ARC) `0.14.2` on Kind, registers one repository-level autoscaling runner scale set, and connects ARC metrics to the repository's existing VictoriaMetrics and Grafana example. Direct Helm installation is the default path; Argo CD manifests are optional.
 
-```mermaid
-flowchart TD
-  github[GitHub Actions] --> listener[Scale-set listener]
-  listener --> controller[Shared ARC controller]
-  controller --> runners[Ephemeral runner pods on Kind]
-  controller --> metrics[Controller and listener metrics]
-  listener --> metrics
-  metrics --> vm[Prometheus/VictoriaMetrics]
-  vm --> grafana[Grafana]
-```
+![ARC runner scale set architecture](docs/images/arc-architecture.png)
 
 The listener pod runs in `arc-systems`; runner pods and the `AutoscalingRunnerSet` run in `arc-runners-demo`. GitHub sends work over outbound HTTPS connections initiated by ARC and the runners. No inbound connection from GitHub to the local machine is required.
 
