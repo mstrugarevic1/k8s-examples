@@ -33,7 +33,7 @@ abort("runner chart rendered a credential Secret") if runners.any? { |doc| doc["
 scale_set = runners.find { |doc| doc["kind"] == "AutoscalingRunnerSet" }
 abort("missing AutoscalingRunnerSet") unless scale_set
 abort("runner bounds changed") unless scale_set.dig("spec", "minRunners") == 0 && scale_set.dig("spec", "maxRunners") == 5
-abort("pre-existing Secret reference missing") unless scale_set.dig("spec", "githubConfigSecret") == "github-app-credentials"
+abort("pre-existing Secret reference missing") unless scale_set.dig("spec", "githubConfigSecret") == "github-pat"
 abort("listener metrics missing") unless scale_set.dig("spec", "listenerMetrics", "gauges", "gha_desired_runners")
 
 abort("expected two ServiceMonitors") unless observability.count { |doc| doc["kind"] == "ServiceMonitor" } == 2

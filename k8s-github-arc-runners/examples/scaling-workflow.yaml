@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         job: [1, 2, 3, 4, 5]
-    runs-on: miroslav-kind-runners
+    runs-on: arc-demo-runners
     steps:
       - name: Show ephemeral runner
         shell: bash

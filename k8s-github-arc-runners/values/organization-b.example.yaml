@@ -1,6 +1,6 @@
 # Helm release namespace: arc-runners-organization-b
 githubConfigUrl: https://github.com/organization-b
-githubConfigSecret: organization-b-github-app
+githubConfigSecret: organization-b-github-pat
 runnerScaleSetName: organization-b-runners
 runnerGroup: default
 minRunners: 0

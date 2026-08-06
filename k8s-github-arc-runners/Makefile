@@ -8,7 +8,7 @@ RUNNER_CHART := oci://ghcr.io/actions/actions-runner-controller-charts/gha-runne
 CONTROLLER_NAMESPACE ?= arc-systems
 RUNNER_NAMESPACE ?= arc-runners-demo
 OBSERVABILITY_NAMESPACE ?= observability
-RUNNER_SCALE_SET_NAME ?= miroslav-kind-runners
+RUNNER_SCALE_SET_NAME ?= arc-demo-runners
 GITHUB_CONFIG_URL ?= https://github.com/OWNER/REPOSITORY
 
 export ARC_VERSION CONTROLLER_CHART RUNNER_CHART CONTROLLER_NAMESPACE RUNNER_NAMESPACE
@@ -23,14 +23,14 @@ kind-down:
 	kind delete cluster --name arc-runners
 
 create-secret:
-	ARC_RUNNER_NAMESPACE="$(RUNNER_NAMESPACE)" examples/create-github-app-secret.sh
+	ARC_RUNNER_NAMESPACE="$(RUNNER_NAMESPACE)" examples/create-github-pat-secret.sh
 
 install-controller:
 	helm upgrade --install arc-controller "$(CONTROLLER_CHART)" --version "$(ARC_VERSION)" --namespace "$(CONTROLLER_NAMESPACE)" --create-namespace --wait -f values/controller.yaml
 
 install-runners:
 	@test "$(GITHUB_CONFIG_URL)" != "https://github.com/OWNER/REPOSITORY" || { echo "set GITHUB_CONFIG_URL=https://github.com/<owner>/<repository>"; exit 1; }
-	kubectl -n "$(RUNNER_NAMESPACE)" get secret github-app-credentials >/dev/null
+	kubectl -n "$(RUNNER_NAMESPACE)" get secret github-pat >/dev/null
 	helm upgrade --install arc-demo "$(RUNNER_CHART)" --version "$(ARC_VERSION)" --namespace "$(RUNNER_NAMESPACE)" --create-namespace --wait -f values/demo-repository.yaml --set-string githubConfigUrl="$(GITHUB_CONFIG_URL)"
 
 install-observability:

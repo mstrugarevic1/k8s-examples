@@ -14,13 +14,13 @@ spec:
             namespace: arc-runners-organization-a
             runnerScaleSetName: organization-a-runners
             runnerGroup: default
-            secretName: organization-a-github-app
+            secretName: organization-a-github-pat
           - organization: organization-b
             githubConfigUrl: https://github.com/organization-b
             namespace: arc-runners-organization-b
             runnerScaleSetName: organization-b-runners
             runnerGroup: default
-            secretName: organization-b-github-app
+            secretName: organization-b-github-pat
   template:
     metadata:
       name: 'arc-{{ .organization }}'

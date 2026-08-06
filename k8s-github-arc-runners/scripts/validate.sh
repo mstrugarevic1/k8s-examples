@@ -34,7 +34,7 @@ end
 
 values = documents.fetch("values/demo-repository.yaml").first
 abort("runner bounds changed") unless values["minRunners"] == 0 && values["maxRunners"] == 5
-abort("secret must be referenced by name") unless values["githubConfigSecret"] == "github-app-credentials"
+abort("secret must be referenced by name") unless values["githubConfigSecret"] == "github-pat"
 labels = values.fetch("listenerMetrics").values.flat_map(&:values).flat_map { |metric| metric.fetch("labels", []) }
 forbidden = %w[job_name event_name job_workflow_ref job_workflow_name job_workflow_target]
 abort("high-cardinality listener labels enabled") unless (labels & forbidden).empty?

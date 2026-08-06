@@ -1,6 +1,6 @@
 # GitHub Actions Runner Controller on Kubernetes
 
-This Kubernetes example runs GitHub Actions Runner Controller (ARC). It is intended for platform engineers who want to test a single repository runner scale set, GitHub App authentication, and runner autoscaling before designing a production deployment.
+This Kubernetes example runs GitHub Actions Runner Controller (ARC). It is intended for platform engineers who want to test a single repository runner scale set, fine-grained personal access token (PAT) authentication, and runner autoscaling before designing a production deployment.
 
 The documented workflow has been tested locally with Kind on macOS. It is not a production-ready runner platform.
 
@@ -25,7 +25,7 @@ The documented workflow has been tested locally with Kind on macOS. It is not a 
 The example demonstrates how to:
 
 * run one shared ARC controller;
-* register a repository-level runner scale set with a GitHub App;
+* register a repository-level runner scale set with a fine-grained PAT;
 * create ephemeral runner pods when workflow jobs are queued;
 * scale runners with ARC itself, without HPA or KEDA; and
 * optionally collect ARC metrics and deploy the resources with Argo CD.
@@ -38,7 +38,7 @@ The main path covers one GitHub organization and one repository. The repository 
   <img src="docs/images/arc-architecture.png" alt="ARC runner scale set architecture" width="80%">
 </p>
 
-The controller and listener run in `arc-systems`. The `AutoscalingRunnerSet` and ephemeral runner pods run in `arc-runners-demo`. The GitHub App credentials are stored in a Kubernetes Secret in the runner namespace.
+The controller and listener run in `arc-systems`. The `AutoscalingRunnerSet` and ephemeral runner pods run in `arc-runners-demo`. The GitHub PAT is stored in a Kubernetes Secret in the runner namespace.
 
 The listener receives job demand from GitHub and adjusts the desired runner count between `minRunners: 0` and `maxRunners: 5`. Each runner pod normally handles one job and is then removed. ARC and the runners initiate outbound HTTPS connections, so GitHub does not require an inbound connection to the local cluster.
 
@@ -49,7 +49,7 @@ The listener receives job demand from GitHub and adjusts the desired runner coun
 * `kubectl`
 * Helm
 * `make`
-* A GitHub.com repository and permission to install a GitHub App
+* A GitHub.com repository and permission to create a fine-grained PAT for it
 * Outbound HTTPS access to GitHub and GHCR
 
 The static validation targets also require Ruby, `jq`, and `kubeconform`.
@@ -67,21 +67,18 @@ The expected context is `kind-arc-runners`.
 
 ### Configure GitHub Authentication
 
-Create and install a GitHub App for the repository. For repository-level runners, grant it these repository permissions:
+Create a fine-grained PAT for the target repository. For a repository-level runner scale set, grant it this repository permission:
 
 * `Administration: Read and write`
-* `Metadata: Read-only`
 
-Generate a private key, then create the Kubernetes Secret:
+Create the Kubernetes Secret:
 
 ```bash
-export GITHUB_APP_ID='<app-id>'
-export GITHUB_APP_INSTALLATION_ID='<installation-id>'
-export GITHUB_APP_PRIVATE_KEY_FILE='/absolute/path/to/private-key.pem'
+export GITHUB_PAT='<token>'
 make create-secret
 ```
 
-The helper creates `github-app-credentials` in `arc-runners-demo`. The Secret must exist in the same namespace as the runner scale set. Do not commit the private key or a populated Secret manifest.
+The helper creates `github-pat` in `arc-runners-demo`. The Secret must exist in the same namespace as the runner scale set. Never commit the token or a populated Secret manifest.
 
 ### Install ARC
 
@@ -106,7 +103,7 @@ kubectl get pods -n arc-systems
 kubectl get autoscalingrunnersets -n arc-runners-demo
 ```
 
-The charts are pinned in [`versions.env`](versions.env). The runner scale set name is `miroslav-kind-runners`.
+The charts are pinned in [`versions.env`](versions.env). The runner scale set name is `arc-demo-runners`.
 
 ### Run a Test Workflow
 
@@ -115,7 +112,7 @@ Copy [`examples/scaling-workflow.yaml`](examples/scaling-workflow.yaml) to `.git
 The workflow starts five jobs with:
 
 ```yaml
-runs-on: miroslav-kind-runners
+runs-on: arc-demo-runners
 ```
 
 ### Verify Runner Scaling
@@ -160,7 +157,7 @@ This target checks Kubernetes resources and endpoints. It does not start or veri
 
 The `argocd/` directory contains an optional AppProject and Applications for the same controller, runner scale set, and observability chart. Argo CD is not installed by this example.
 
-Replace every `OWNER/REPOSITORY` placeholder in `argocd/`, create `github-app-credentials` in `arc-runners-demo`, and run:
+Replace every `OWNER/REPOSITORY` placeholder in `argocd/`, create `github-pat` in `arc-runners-demo`, and run:
 
 ```bash
 make argocd-apply

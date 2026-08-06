@@ -1,6 +1,6 @@
 githubConfigUrl: https://github.com/OWNER/REPOSITORY
-githubConfigSecret: github-app-credentials
-runnerScaleSetName: miroslav-kind-runners
+githubConfigSecret: github-pat
+runnerScaleSetName: arc-demo-runners
 minRunners: 0
 maxRunners: 5
 

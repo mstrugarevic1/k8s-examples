@@ -1,6 +1,6 @@
 controllerNamespace: arc-systems
 runnerNamespace: arc-runners-demo
-runnerScaleSetName: miroslav-kind-runners
+runnerScaleSetName: arc-demo-runners
 scrapeInterval: 30s
 
 dashboard:

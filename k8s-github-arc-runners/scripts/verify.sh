@@ -4,7 +4,7 @@ set -euo pipefail
 : "${CONTROLLER_NAMESPACE:=arc-systems}"
 : "${RUNNER_NAMESPACE:=arc-runners-demo}"
 : "${OBSERVABILITY_NAMESPACE:=observability}"
-: "${RUNNER_SCALE_SET_NAME:=miroslav-kind-runners}"
+: "${RUNNER_SCALE_SET_NAME:=arc-demo-runners}"
 
 kubectl cluster-info >/dev/null
 kubectl get namespace "$CONTROLLER_NAMESPACE" "$RUNNER_NAMESPACE" "$OBSERVABILITY_NAMESPACE" >/dev/null
