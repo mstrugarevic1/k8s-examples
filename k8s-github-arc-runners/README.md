@@ -1,8 +1,8 @@
-# GitHub Actions Runner Controller on Kind
+# GitHub Actions Runner Controller on Kubernetes
 
-This example runs GitHub Actions Runner Controller (ARC) on a local Kind cluster. It is intended for platform engineers who want to test a single repository runner scale set, GitHub App authentication, and runner autoscaling before designing a production deployment.
+This Kubernetes example runs GitHub Actions Runner Controller (ARC). It is intended for platform engineers who want to test a single repository runner scale set, GitHub App authentication, and runner autoscaling before designing a production deployment.
 
-The example uses Kind for local testing. It is not a production-ready runner platform.
+The documented workflow has been tested locally with Kind on macOS. It is not a production-ready runner platform.
 
 ## Table of Contents
 
@@ -34,7 +34,9 @@ The main path covers one GitHub organization and one repository. The repository 
 
 ## Architecture
 
-![ARC runner scale set architecture](docs/images/arc-architecture.png)
+<p align="center">
+  <img src="docs/images/arc-architecture.png" alt="ARC runner scale set architecture" width="80%">
+</p>
 
 The controller and listener run in `arc-systems`. The `AutoscalingRunnerSet` and ephemeral runner pods run in `arc-runners-demo`. The GitHub App credentials are stored in a Kubernetes Secret in the runner namespace.
 
