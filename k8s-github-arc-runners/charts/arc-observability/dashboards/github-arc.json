@@ -7,12 +7,13 @@
   "panels": [
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
+      "description": "Jobs assigned to the scale set but not yet running.",
+      "fieldConfig": {"defaults": {"decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
       "id": 1,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_desired_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Desired runners",
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "clamp_min(sum by (namespace, name) (gha_assigned_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"}) - sum by (namespace, name) (gha_running_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"}), 0)", "instant": true, "legendFormat": "queued", "refId": "A"}],
+      "title": "Queued jobs",
       "type": "stat"
     },
     {
@@ -20,9 +21,9 @@
       "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
       "id": 2,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_registered_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Registered runners",
+      "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum by (namespace, name) (gha_running_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"})", "instant": true, "legendFormat": "running", "refId": "A"}],
+      "title": "Running jobs",
       "type": "stat"
     },
     {
@@ -30,9 +31,9 @@
       "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
       "id": 3,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_busy_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Busy runners",
+      "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum by (namespace, name) (gha_registered_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "instant": true, "legendFormat": "registered", "refId": "A"}],
+      "title": "Registered runners",
       "type": "stat"
     },
     {
@@ -40,80 +41,100 @@
       "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
       "id": 4,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_idle_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Idle runners",
+      "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum by (namespace, name) (gha_busy_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "instant": true, "legendFormat": "busy", "refId": "A"}],
+      "title": "Busy runners",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 90}, {"color": "green", "value": 95}]}, "unit": "percent"}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
       "id": 5,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_assigned_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Assigned jobs",
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "100 * sum(increase(gha_completed_jobs_total{organization=~\"$organization\",repository=~\"$repository\",job_result=\"succeeded\"}[$__range])) / clamp_min(sum(increase(gha_completed_jobs_total{organization=~\"$organization\",repository=~\"$repository\"}[$__range])), 1)", "instant": true, "legendFormat": "success", "refId": "A"}],
+      "title": "Job success rate",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []},
+      "description": "ARC job startup duration: time from job assignment until execution starts on a runner.",
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 30}, {"color": "red", "value": 120}]}, "unit": "s"}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
       "id": 6,
-      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum by (namespace, name) (gha_running_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Running jobs",
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (increase(gha_job_startup_duration_seconds_bucket{organization=~\"$organization\",repository=~\"$repository\"}[$__range])))", "instant": true, "legendFormat": "p95", "refId": "A"}],
+      "title": "Queue wait p95",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "description": "ARC response to demand. Queued jobs should fall as desired, registered, and busy runners rise.",
+      "fieldConfig": {"defaults": {"decimals": 0, "min": 0}, "overrides": []},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 4},
       "id": 7,
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
-      "targets": [{"expr": "sum by (namespace, name, job_result) (increase(gha_completed_jobs_total{namespace=~\"$namespace\",name=~\"$scale_set\"}[$__rate_interval]))", "legendFormat": "{{namespace}}/{{name}} {{job_result}}", "refId": "A"}],
-      "title": "Completed jobs by result",
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [
+        {"expr": "sum by (namespace, name) (gha_desired_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "desired runners", "refId": "A"},
+        {"expr": "sum by (namespace, name) (gha_registered_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "registered runners", "refId": "B"},
+        {"expr": "sum by (namespace, name) (gha_busy_runners{namespace=~\"$namespace\",name=~\"$scale_set\"})", "legendFormat": "busy runners", "refId": "C"},
+        {"expr": "clamp_min(sum by (namespace, name) (gha_assigned_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"}) - sum by (namespace, name) (gha_running_jobs{namespace=~\"$namespace\",name=~\"$scale_set\"}), 0)", "legendFormat": "queued jobs", "refId": "D"}
+      ],
+      "title": "Runner activity",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 70}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 4},
+      "description": "p95 Kubernetes pod creation-to-Ready duration for ephemeral runners. This is a provisioning proxy; ARC 0.14.2 does not expose scale-request-to-GitHub-registration duration.",
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 15}, {"color": "red", "value": 60}]}, "unit": "s"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 13},
       "id": 8,
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true},
-      "targets": [{"expr": "100 * sum by (namespace, name) (gha_busy_runners{namespace=~\"$namespace\",name=~\"$scale_set\"}) / clamp_min(sum by (namespace, name) (gha_registered_runners{namespace=~\"$namespace\",name=~\"$scale_set\"}), 1)", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Runner utilization",
-      "type": "gauge"
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "quantile(0.95, kube_pod_status_ready_time{namespace=~\"$namespace\",pod=~\".*-runner-.*\"} - kube_pod_created{namespace=~\"$namespace\",pod=~\".*-runner-.*\"})", "legendFormat": "p95", "refId": "A"}],
+      "title": "Provisioning p95",
+      "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 80}, {"color": "red", "value": 100}]}, "unit": "percent"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 4},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 13},
       "id": 9,
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true},
-      "targets": [{"expr": "100 * sum by (namespace, name) (gha_desired_runners{namespace=~\"$namespace\",name=~\"$scale_set\"}) / clamp_min(sum by (namespace, name) (gha_max_runners{namespace=~\"$namespace\",name=~\"$scale_set\"}), 1)", "legendFormat": "{{namespace}}/{{name}}", "refId": "A"}],
-      "title": "Scale-set saturation",
-      "type": "gauge"
+      "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (increase(gha_job_execution_duration_seconds_bucket{organization=~\"$organization\",repository=~\"$repository\"}[$__range])))", "instant": true, "legendFormat": "p95", "refId": "A"}],
+      "title": "Execution p95",
+      "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "fieldConfig": {"defaults": {"decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 13},
       "id": 10,
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
-      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, namespace, name) (rate(gha_job_startup_duration_seconds_bucket{namespace=~\"$namespace\",name=~\"$scale_set\"}[$__rate_interval])))", "legendFormat": "{{namespace}}/{{name}} p95", "refId": "A"}],
-      "title": "Job startup duration (p95)",
-      "type": "timeseries"
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum(increase(gha_completed_jobs_total{organization=~\"$organization\",repository=~\"$repository\",job_result=\"failed\"}[$__range])) or vector(0)", "instant": true, "legendFormat": "failed", "refId": "A"}],
+      "title": "Failed jobs",
+      "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "description": "Controller reconciliation errors plus listener metrics-handler errors in the selected time range.",
+      "fieldConfig": {"defaults": {"decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "gridPos": {"h": 4, "w": 5, "x": 15, "y": 13},
       "id": 11,
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
-      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, namespace, name) (rate(gha_job_execution_duration_seconds_bucket{namespace=~\"$namespace\",name=~\"$scale_set\"}[$__rate_interval])))", "legendFormat": "{{namespace}}/{{name}} p95", "refId": "A"}],
-      "title": "Job execution duration (p95)",
-      "type": "timeseries"
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "(sum(increase(controller_runtime_reconcile_errors_total[$__range])) or vector(0)) + (sum(increase(promhttp_metric_handler_errors_total{namespace=\"arc-systems\",service=\"arc-listener-metrics\"}[$__range])) or vector(0))", "instant": true, "legendFormat": "errors", "refId": "A"}],
+      "title": "ARC errors",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Runner restart, failed-pod, OOMKilled, and unschedulable signals in the selected time range.",
+      "fieldConfig": {"defaults": {"decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 13},
+      "id": 12,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "(sum(increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\",pod=~\".*-runner-.*\"}[$__range])) or vector(0)) + (sum(max_over_time(kube_pod_status_phase{namespace=~\"$namespace\",pod=~\".*-runner-.*\",phase=\"Failed\"}[$__range])) or vector(0)) + (sum(max_over_time(kube_pod_container_status_last_terminated_reason{namespace=~\"$namespace\",pod=~\".*-runner-.*\",reason=\"OOMKilled\"}[$__range])) or vector(0)) + (sum(max_over_time(kube_pod_status_unschedulable{namespace=~\"$namespace\",pod=~\".*-runner-.*\"}[$__range])) or vector(0))", "instant": true, "legendFormat": "errors", "refId": "A"}],
+      "title": "Runner errors",
+      "type": "stat"
     }
   ],
   "refresh": "30s",
@@ -122,12 +143,14 @@
   "templating": {
     "list": [
       {"current": {}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "definition": "label_values(gha_desired_runners, namespace)", "includeAll": true, "label": "Runner namespace", "multi": true, "name": "namespace", "options": [], "query": {"query": "label_values(gha_desired_runners, namespace)", "refId": "VariableQuery"}, "refresh": 1, "type": "query"},
-      {"current": {}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "definition": "label_values(gha_desired_runners{namespace=~\"$namespace\"}, name)", "includeAll": true, "label": "Scale set", "multi": true, "name": "scale_set", "options": [], "query": {"query": "label_values(gha_desired_runners{namespace=~\"$namespace\"}, name)", "refId": "VariableQuery"}, "refresh": 1, "type": "query"}
+      {"current": {}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "definition": "label_values(gha_desired_runners{namespace=~\"$namespace\"}, name)", "includeAll": true, "label": "Scale set", "multi": true, "name": "scale_set", "options": [], "query": {"query": "label_values(gha_desired_runners{namespace=~\"$namespace\"}, name)", "refId": "VariableQuery"}, "refresh": 1, "type": "query"},
+      {"current": {}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "definition": "label_values(gha_completed_jobs_total, organization)", "includeAll": true, "label": "Organization", "multi": true, "name": "organization", "options": [], "query": {"query": "label_values(gha_completed_jobs_total, organization)", "refId": "VariableQuery"}, "refresh": 1, "type": "query"},
+      {"current": {}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "definition": "label_values(gha_completed_jobs_total{organization=~\"$organization\"}, repository)", "includeAll": true, "label": "Repository", "multi": true, "name": "repository", "options": [], "query": {"query": "label_values(gha_completed_jobs_total{organization=~\"$organization\"}, repository)", "refId": "VariableQuery"}, "refresh": 1, "type": "query"}
     ]
   },
   "time": {"from": "now-1h", "to": "now"},
   "timezone": "browser",
   "title": "GitHub ARC Runner Scale Sets",
   "uid": "github-arc-runner-scale-sets",
-  "version": 1
+  "version": 3
 }

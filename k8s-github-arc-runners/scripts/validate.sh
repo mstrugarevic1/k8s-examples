@@ -51,14 +51,20 @@ helm template arc-observability charts/arc-observability --namespace observabili
 ruby -ryaml -e 'abort("empty chart render") if YAML.load_stream(File.read(ARGV[0])).compact.empty?' "$rendered_chart"
 
 echo "==> dashboard JSON and queries"
-jq -e '.uid and .title and (.panels | length == 11)' charts/arc-observability/dashboards/github-arc.json >/dev/null
+jq -e '.uid and .title and (.panels | length == 12)' charts/arc-observability/dashboards/github-arc.json >/dev/null
 ruby <<'RUBY'
 require "json"
 dashboard = JSON.parse(File.read("charts/arc-observability/dashboards/github-arc.json"))
-expected = ["Desired runners", "Registered runners", "Busy runners", "Idle runners", "Assigned jobs", "Running jobs", "Completed jobs by result", "Runner utilization", "Job startup duration (p95)", "Job execution duration (p95)", "Scale-set saturation"]
+expected = ["Queued jobs", "Running jobs", "Registered runners", "Busy runners", "Job success rate", "Queue wait p95", "Runner activity", "Provisioning p95", "Execution p95", "Failed jobs", "ARC errors", "Runner errors"]
 abort("dashboard panels are incomplete") unless expected.sort == dashboard.fetch("panels").map { |panel| panel["title"] }.sort
+abort("dashboard must have one time-series panel") unless dashboard.fetch("panels").count { |panel| panel["type"] == "timeseries" } == 1
+runner_activity = dashboard.fetch("panels").find { |panel| panel["title"] == "Runner activity" }
+abort("runner activity must have four series") unless runner_activity.fetch("targets").length == 4
+abort("stat sparklines must be disabled") unless dashboard.fetch("panels").select { |panel| panel["type"] == "stat" }.all? { |panel| panel.dig("options", "graphMode") == "none" }
 abort("wrong Grafana datasource UID") unless dashboard.to_s.include?("prometheus")
 abort("high-cardinality dashboard labels enabled") if dashboard.to_s.match?(/job_workflow_(ref|name)/)
+job_queries = dashboard.fetch("panels").flat_map { |panel| panel.fetch("targets", []) }.map { |target| target["expr"] if target["expr"]&.match?(/gha_(completed_jobs|job_(startup|execution)_duration)/) }.compact
+abort("job metrics must use repository labels") unless job_queries.all? { |query| query.include?("organization") && query.include?("repository") }
 RUBY
 
 echo "==> credential and architecture guardrails"
