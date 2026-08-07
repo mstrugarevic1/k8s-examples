@@ -145,6 +145,8 @@ make -C ../k8s-observability-golden-path grafana NAMESPACE=observability
 
 Open `http://localhost:3000` and select **GitHub ARC Runner Scale Sets**.
 
+![GitHub ARC Grafana dashboard](docs/images/arc-grafana-dashboard.png)
+
 After installing the controller, scale set, and observability resources, run the live resource checks:
 
 ```bash
