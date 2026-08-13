@@ -201,7 +201,7 @@ def validate_config(raw: dict[str, Any]) -> dict[str, Any]:
             "allowIngressFromSameNamespace": require_bool(network, "allowIngressFromSameNamespace"),
             "allowIngressFromNamespaces": ingress_namespaces,
             "allowEgressToNamespaces": egress_namespaces,
-            "allowExternalEgress": optional_bool(network, "allowExternalEgress", False),
+            "allowAllEgress": optional_bool(network, "allowAllEgress", False),
         },
         "rbac": {
             "readOnlyGroup": require_string(rbac, "readOnlyGroup"),
@@ -230,8 +230,6 @@ def metadata(config: dict[str, Any], name: str | None = None) -> dict[str, Any]:
         "app.kubernetes.io/managed-by": "k8s-namespace-onboarding",
         "platform.example.com/team": config["team"],
         "platform.example.com/environment": config["environment"],
-        "platform.example.com/owner": config["owner"],
-        "platform.example.com/cost-center": config["costCenter"],
     }
     data: dict[str, Any] = {"name": name or config["namespace"], "labels": labels}
     if name:
@@ -241,6 +239,10 @@ def metadata(config: dict[str, Any], name: str | None = None) -> dict[str, Any]:
 
 def namespace(config: dict[str, Any]) -> dict[str, Any]:
     data = metadata(config)
+    data["annotations"] = {
+        "platform.example.com/owner": config["owner"],
+        "platform.example.com/cost-center": config["costCenter"],
+    }
     data["labels"].update(
         {
             "pod-security.kubernetes.io/enforce": "restricted",
@@ -417,12 +419,12 @@ def network_policies(config: dict[str, Any]) -> list[dict[str, Any]]:
                 },
             }
         )
-    if config["network"]["allowExternalEgress"]:
+    if config["network"]["allowAllEgress"]:
         policies.append(
             {
                 "apiVersion": "networking.k8s.io/v1",
                 "kind": "NetworkPolicy",
-                "metadata": metadata(config, "allow-external-egress"),
+                "metadata": metadata(config, "allow-all-egress"),
                 "spec": {"podSelector": {}, "policyTypes": ["Egress"], "egress": [{"to": [{"ipBlock": {"cidr": "0.0.0.0/0"}}]}]},
             }
         )

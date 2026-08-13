@@ -1,26 +1,34 @@
 TEAM ?= payments-staging
 TEAM_FILE ?= teams/$(TEAM).yaml
 OUT ?= generated
+PYTHON ?= .venv/bin/python
 
-.PHONY: install generate test validate clean
+.PHONY: install generate generate-all test validate check clean
 
 install:
-	python3 -m pip install -r requirements.txt
+	python3 -m venv .venv
+	$(PYTHON) -m pip install -r requirements.txt
 
 generate:
-	python3 scripts/generate.py $(TEAM_FILE) --out $(OUT)
+	$(PYTHON) scripts/generate.py $(TEAM_FILE) --out $(OUT)
+
+generate-all:
+	@set -e; for config in $(sort $(wildcard teams/*.yaml)); do \
+		$(PYTHON) scripts/generate.py "$$config" --out "$(OUT)"; \
+	done
 
 test:
-	python3 -m pytest -q
+	$(PYTHON) -m pytest -q
 
-validate: generate
-	@if ! command -v kubectl >/dev/null 2>&1; then \
-		echo "kubectl is not installed; skipping client-side manifest validation."; \
-	elif ! kubectl config current-context >/dev/null 2>&1; then \
-		echo "kubectl has no current context; skipping client-side manifest validation."; \
-	else \
-		kubectl apply --dry-run=client --validate=false -f $(OUT)/$(TEAM); \
-	fi
+validate:
+	kubeconform -strict -summary "$(OUT)"
+
+check:
+	$(MAKE) test
+	@set -e; tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+		$(MAKE) generate-all OUT="$$tmp"; \
+		$(MAKE) validate OUT="$$tmp"; \
+		diff -ru "$(OUT)" "$$tmp"
 
 clean:
 	rm -rf $(OUT)

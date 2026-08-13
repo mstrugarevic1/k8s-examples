@@ -30,7 +30,7 @@ network:
   allowIngressFromSameNamespace: false
   allowIngressFromNamespaces: []
   allowEgressToNamespaces: []
-  allowExternalEgress: false
+  allowAllEgress: false
 
 rbac:
   readOnlyGroup: catalog-readers

@@ -32,7 +32,7 @@ network:
     - ingress-nginx
   allowEgressToNamespaces:
     - observability
-  allowExternalEgress: false
+  allowAllEgress: false
 
 rbac:
   readOnlyGroup: payments-readers

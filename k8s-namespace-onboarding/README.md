@@ -8,13 +8,15 @@ This is an example project, not a complete production platform.
 
 ```text
 Team YAML
-    |
+    ↓
 Configuration validation
-    |
+    ↓
 Manifest generation
-    |
+    ↓
+Kubernetes schema validation
+    ↓
 Pull request review
-    |
+    ↓
 GitOps repository or cluster deployment
 ```
 
@@ -35,7 +37,8 @@ k8s-namespace-onboarding/
 ## Prerequisites
 
 - Python 3.11+
-- `kubectl` for optional client-side manifest validation
+- `kubeconform`
+- A CNI with Kubernetes NetworkPolicy enforcement is required for the generated network policies to have effect.
 
 Install Python dependencies:
 
@@ -82,7 +85,7 @@ network:
     - ingress-nginx
   allowEgressToNamespaces:
     - observability
-  allowExternalEgress: false
+  allowAllEgress: false
 
 rbac:
   readOnlyGroup: payments-readers
@@ -105,14 +108,14 @@ Supported environments are `development`, `staging`, and `production`.
 - `network.allowIngressFromSameNamespace` lets pods in the same namespace talk to each other.
 - `network.allowIngressFromNamespaces` allows traffic from listed namespaces.
 - `network.allowEgressToNamespaces` allows traffic to listed namespaces.
-- `network.allowExternalEgress` allows outbound traffic to any IP. Keep it `false` unless the namespace really needs internet or external service access.
+- `network.allowAllEgress` allows unrestricted IPv4 egress to `0.0.0.0/0`. Keep it `false` unless the namespace requires it.
 - `rbac.allowExec` and `rbac.allowPortForward` are off by default because they give stronger debugging access.
 
 ## Generate Manifests
 
 ```bash
 make generate TEAM=payments-staging
-make generate TEAM=catalog-development
+make generate-all
 ```
 
 Generated files are written to `generated/<team>-<environment>/`:
@@ -129,11 +132,19 @@ Generated files are written to `generated/<team>-<environment>/`:
 ## Test and Validate
 
 ```bash
+make install
 make test
-make validate TEAM=payments-staging
+make generate-all
+make validate
 ```
 
-`make validate` uses `kubectl apply --dry-run=client --validate=false` when `kubectl` is installed and has a current context. If `kubectl` is missing or not configured, it prints a clear skip message.
+Or run the complete pipeline, including generated-manifest drift detection:
+
+```bash
+make check
+```
+
+`make validate` uses strict kubeconform schema validation and does not require a cluster or kubectl context.
 
 ## Generated Security Controls
 
@@ -152,5 +163,4 @@ make validate TEAM=payments-staging
 
 - It does not install Kubernetes or any cluster add-ons.
 - It does not create application Deployments, Services, or PodDisruptionBudgets.
-- `make validate` is only a basic local check.
 - The RBAC rules are simple and may need changes for a real company setup.

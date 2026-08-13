@@ -40,7 +40,7 @@ def valid_config() -> dict[str, Any]:
             "allowIngressFromSameNamespace": True,
             "allowIngressFromNamespaces": ["ingress-nginx"],
             "allowEgressToNamespaces": ["observability"],
-            "allowExternalEgress": False,
+            "allowAllEgress": False,
         },
         "rbac": {
             "readOnlyGroup": "payments-readers",
@@ -74,6 +74,11 @@ def test_valid_configuration_generates_files(tmp_path: Path) -> None:
     ]
 
 
+@pytest.mark.parametrize("source", sorted((ROOT / "teams").glob("*.yaml")), ids=lambda path: path.stem)
+def test_all_team_configurations_generate(source: Path, tmp_path: Path) -> None:
+    assert generate(source, tmp_path).is_dir()
+
+
 def test_missing_required_field() -> None:
     config = valid_config()
     del config["team"]
@@ -98,11 +103,31 @@ def test_generated_namespace_name() -> None:
     assert namespace["metadata"]["labels"]["pod-security.kubernetes.io/enforce"] == "restricted"
 
 
+def test_owner_and_cost_center_are_namespace_annotations() -> None:
+    files = files_for(validate_config(valid_config()))
+    namespace = yaml.safe_load(files["00-namespace.yaml"])
+    metadata = namespace["metadata"]
+
+    assert metadata["annotations"] == {
+        "platform.example.com/owner": "payments-team",
+        "platform.example.com/cost-center": "finops-042",
+    }
+    for document in all_documents(files):
+        assert "platform.example.com/owner" not in document["metadata"]["labels"]
+        assert "platform.example.com/cost-center" not in document["metadata"]["labels"]
+
+
 def test_no_cluster_roles_or_bindings() -> None:
     kinds = {doc["kind"] for doc in all_documents(files_for(validate_config(valid_config())))}
 
     assert "ClusterRole" not in kinds
     assert "ClusterRoleBinding" not in kinds
+
+
+def test_rbac_is_namespace_scoped() -> None:
+    documents = list(yaml.safe_load_all(files_for(validate_config(valid_config()))["02-rbac.yaml"]))
+
+    assert all(document["metadata"]["namespace"] == "payments-staging" for document in documents)
 
 
 def test_no_wildcard_rbac_permissions() -> None:
@@ -126,13 +151,32 @@ def test_default_deny_network_policy_generation() -> None:
     assert default_deny["spec"]["policyTypes"] == ["Ingress", "Egress"]
 
 
-def test_namespace_to_namespace_network_policies() -> None:
-    policies = list(yaml.safe_load_all(files_for(validate_config(valid_config()))["05-network-policies.yaml"]))
+def test_dns_policy_is_conditional() -> None:
+    config = valid_config()
+    config["network"]["allowDns"] = False
+    policies = list(yaml.safe_load_all(files_for(validate_config(config))["05-network-policies.yaml"]))
+
+    assert "allow-dns" not in {policy["metadata"]["name"] for policy in policies}
+
+
+def test_allow_all_egress_false_does_not_generate_unrestricted_egress() -> None:
+    content = files_for(validate_config(valid_config()))["05-network-policies.yaml"]
+    policies = list(yaml.safe_load_all(content))
     names = {policy["metadata"]["name"] for policy in policies}
 
     assert "allow-ingress-from-namespaces" in names
     assert "allow-egress-to-namespaces" in names
-    assert "allow-external-egress" not in names
+    assert "allow-all-egress" not in names
+    assert "0.0.0.0/0" not in content
+
+
+def test_allow_all_egress_true_generates_unrestricted_ipv4_egress() -> None:
+    config = valid_config()
+    config["network"]["allowAllEgress"] = True
+    policies = list(yaml.safe_load_all(files_for(validate_config(config))["05-network-policies.yaml"]))
+    policy = next(policy for policy in policies if policy["metadata"]["name"] == "allow-all-egress")
+
+    assert policy["spec"]["egress"] == [{"to": [{"ipBlock": {"cidr": "0.0.0.0/0"}}]}]
 
 
 def test_quota_includes_storage_and_object_counts() -> None:
@@ -154,6 +198,12 @@ def test_service_account_is_bound_to_developer_role() -> None:
     assert binding["roleRef"]["name"] == "developer"
 
 
+def test_service_account_token_automount_is_disabled() -> None:
+    service_account = yaml.safe_load(files_for(validate_config(valid_config()))["01-service-account.yaml"])
+
+    assert service_account["automountServiceAccountToken"] is False
+
+
 def test_deterministic_output() -> None:
     config = validate_config(valid_config())
 
@@ -166,3 +216,31 @@ def test_quota_must_cover_limits() -> None:
 
     with pytest.raises(ValueError, match="quota.cpu must be greater"):
         validate_config(config)
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "value", "message"),
+    [
+        ("namespace", "name", "Invalid_Name", "namespace.name must be a valid Kubernetes DNS label"),
+        ("resources.requests", "cpu", "fast", "resources.requests.cpu must be a CPU quantity"),
+        ("quota", "pods", 0, "missing or invalid positive integer: pods"),
+        ("rbac", "allowExec", "yes", "invalid boolean: allowExec"),
+    ],
+)
+def test_invalid_configuration_values(section: str, field: str, value: Any, message: str) -> None:
+    config = valid_config()
+    target = config
+    for key in section.split("."):
+        target = target[key]
+    target[field] = value
+
+    with pytest.raises(ValueError, match=message):
+        validate_config(config)
+
+
+def test_malformed_yaml(tmp_path: Path) -> None:
+    source = tmp_path / "malformed.yaml"
+    source.write_text("team: [\n")
+
+    with pytest.raises(yaml.YAMLError):
+        generate(source, tmp_path / "generated")
